@@ -3,6 +3,7 @@ require "rails"
 require "active_model/railtie"
 require "active_job/railtie"
 require "active_record/railtie"
+require "active_storage/engine"
 require "action_controller/railtie"
 require "action_mailer/railtie"
 require "action_view/railtie"
@@ -22,7 +23,7 @@ module WortsTrophyCase
       generate.view_specs false
     end
     config.action_controller.action_on_unpermitted_parameters = :raise
-    config.load_defaults 5.1
+    config.load_defaults 5.2
     config.generators.system_tests = nil
   end
 end
