@@ -35,7 +35,6 @@ group :development, :test do
   gem "awesome_print"
   gem "bundler-audit", ">= 0.5.0", require: false
   gem "dotenv-rails"
-  gem "factory_bot_rails"
   gem "pry-byebug"
   gem "pry-rails"
 end
@@ -46,7 +45,13 @@ group :test do
   gem "simplecov", require: false
   gem "timecop"
   gem "webmock"
-  gem "rspec-rails"
 end
 
 gem "suspenders", group: [:development, :test], github: "thoughtbot/suspenders"
+
+gem 'high_voltage'
+gem 'bourbon', '~> 5.0'
+gem 'neat', '~> 2.1'
+gem 'spring-commands-rspec', group: :development
+gem 'rspec-rails', '~> 3.6', group: [:development, :test]
+gem 'shoulda-matchers', group: :test
