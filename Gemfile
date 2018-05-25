@@ -35,6 +35,7 @@ group :development, :test do
   gem "awesome_print"
   gem "bundler-audit", ">= 0.5.0", require: false
   gem "dotenv-rails"
+  gem "factory_bot_rails"
   gem "pry-byebug"
   gem "pry-rails"
 end
@@ -45,6 +46,7 @@ group :test do
   gem "simplecov", require: false
   gem "timecop"
   gem "webmock"
+  gem "rspec-rails"
 end
 
-# gem "suspenders", group: [:development, :test]
+gem "suspenders", group: [:development, :test], github: "thoughtbot/suspenders"
