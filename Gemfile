@@ -52,8 +52,6 @@ end
 gem "suspenders", group: [:development, :test], github: "thoughtbot/suspenders"
 
 gem 'high_voltage'
-gem 'bourbon', '~> 5.0'
-gem 'neat', '~> 2.1'
 gem 'spring-commands-rspec', group: :development
 gem 'rspec-rails', '~> 3.6', group: [:development, :test]
 gem 'shoulda-matchers', group: :test

@@ -5,7 +5,7 @@
 
 <table>
   <thead>
-    <tr>
+    <tr class="clearfix">
       <td>Brewer</td>
       <td>BJCP Score</td>
       <td>Competition Date</td>
@@ -14,11 +14,11 @@
   </thead>
   <tbody>
     <% @trophies.each do |trophy| %>
-      <tr>
-        <td><%= trophy.user.full_name %></td>
-        <td><%= trophy.bjcp_score %></td>
-        <td><%= trophy.competition_date %></td>
-        <td><%= trophy.competition_url %></td>
+      <tr class="clearfix">
+        <td class="col-3"><%= trophy.user.full_name %></td>
+        <td class="col-3"><%= trophy.bjcp_score %></td>
+        <td class="col-3"><%= trophy.competition_date %></td>
+        <td class="col-3"><%= trophy.competition_url %></td>
       </tr>
     <% end %>
   </tbody>

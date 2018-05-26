@@ -12,9 +12,26 @@
 
   <h2>Add a trophy for <%= current_user.full_name %></h2>
 
-  BJCP Score (1 to 50): <%= f.number_field :bjcp_score %>
-  Competition Date: <%= f.date_select :competition_date, end_year: Date.today.year %>
-  Competition URL: <%= f.text_field :competition_url %>
+  <dl class="form-group">
+    <dt>BJCP Score:</dt>
+    <dd>
+      <%= f.collection_select :bjcp_score, 1..50, :itself, :itself, {}, { class: "form-select" } %>
+    </dd>
+  </dl>
 
-  <%= f.submit %>
+  <dl class="form-group">
+    <dt>Competition Date:</dt>
+    <dd>
+      <%= f.date_select :competition_date, { end_year: Date.today.year }, { class: "form-select" } %>
+    </dd>
+  </dl>
+
+  <dl class="form-group">
+    <dt>Competition URL:</dt>
+    <dd>
+      <%= f.text_field :competition_url, class: "form-control" %>
+    </dd>
+  </dl>
+
+  <%= f.submit class: "btn btn-primary" %>
 <% end %>
