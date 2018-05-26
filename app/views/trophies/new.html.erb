@@ -7,7 +7,7 @@
   <%= current_user.full_name %><br>
 
   BJCP Score: <%= f.number_field :bjcp_score %>
-  Competition Date: <%= f.date_select :competition_date %>
+  Competition Date: <%= f.date_select :competition_date, end_year: Date.today.year %>
   Competition URL: <%= f.text_field :competition_url %>
 
   <%= f.submit %>
