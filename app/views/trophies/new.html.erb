@@ -1,12 +1,18 @@
 <%= form_for(@trophy) do |f| %>
   <% if @trophy.errors.any? %>
-    <%= @trophy.errors.full_messages %>
+    <h2>Errors:</h2>
+    <ul>
+      <% @trophy.errors.full_messages.each do |error| %>
+        <li>
+          <%= error %>
+        </li>
+      <% end %>
+    </p>
   <% end %>
 
-  Brewer:
-  <%= current_user.full_name %><br>
+  <h2>Add a trophy for <%= current_user.full_name %></h2>
 
-  BJCP Score: <%= f.number_field :bjcp_score %>
+  BJCP Score (1 to 50): <%= f.number_field :bjcp_score %>
   Competition Date: <%= f.date_select :competition_date, end_year: Date.today.year %>
   Competition URL: <%= f.text_field :competition_url %>
 
