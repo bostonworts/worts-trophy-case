@@ -3,6 +3,9 @@
     <%= @trophy.errors.full_messages %>
   <% end %>
 
+  Brewer:
+  <%= current_user.full_name %><br>
+
   BJCP Score: <%= f.number_field :bjcp_score %>
   Competition Date: <%= f.date_select :competition_date %>
   Competition URL: <%= f.text_field :competition_url %>
