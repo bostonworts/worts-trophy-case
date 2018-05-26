@@ -7,6 +7,8 @@ describe "submit trophy" do
     click_link "Add Trophy"
 
     # Submit login form with email address in worts list
+    expect(page).to have_content "We'll send you a magic link to the email you use for the Boston Wort Processors email list"
+
     # Open email, visit link in email to log in
     # Assert we were redirected back to "Submit Trophy" form
     # Submit trophy form with required fields
