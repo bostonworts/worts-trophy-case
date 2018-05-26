@@ -1,0 +1,10 @@
+<p>
+  No one wants to keep track of more passwords.
+  Instead, we'll send a magic link to your Boston Worts email address that you can use to log in and add your trophies!
+</p>
+
+<%= form_for @session, url: send(Passwordless.mounted_as).sign_in_path do |f| %>
+  <% email_field_name = :"passwordless[#{@email_field}]" %>
+  <%= text_field_tag email_field_name, params.fetch(email_field_name, nil), placeholder: "Worts email" %>
+  <%= f.submit I18n.t('passwordless.sessions.new.submit') %>
+<% end %>

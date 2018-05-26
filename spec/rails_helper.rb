@@ -7,24 +7,16 @@ require "rspec/rails"
 
 Dir[Rails.root.join("spec/support/**/*.rb")].sort.each { |file| require file }
 
-module Features
-  # Extend this module in spec/support/features/*.rb
+module System
+  # Extend this module in spec/support/system/*.rb
   include Formulaic::Dsl
 end
 
 RSpec.configure do |config|
-  config.include Features, type: :feature
+  config.include System, type: :system
   config.infer_base_class_for_anonymous_controllers = false
   config.infer_spec_type_from_file_location!
   config.use_transactional_fixtures = true
-
-  config.before(:each, type: :system) do
-    driven_by :rack_test
-  end
-
-  config.before(:each, type: :system, js: true) do
-    driven_by :selenium_chrome_headless
-  end
 end
 
 ActiveRecord::Migration.maintain_test_schema!

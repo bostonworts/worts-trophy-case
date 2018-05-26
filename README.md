@@ -34,3 +34,12 @@ you can deploy to staging and production with:
 
     % ./bin/deploy staging
     % ./bin/deploy production
+
+## Authentication
+
+Authentication in this app works like this:
+- All worts members are stored in the users table
+- Sign ups don't happen via the UI - you can only log in if you are already in
+  the users table (which means that you're a paying worts member)
+- When a non-worts user logs in (with non-worts email address), show message
+  "Sorry, this email address doesn't seem to belong to a worts member"

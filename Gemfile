@@ -43,6 +43,7 @@ end
 group :test do
   gem "formulaic"
   gem "launchy"
+  gem "selenium-webdriver"
   gem "simplecov", require: false
   gem "timecop"
   gem "webmock"
@@ -56,3 +57,4 @@ gem 'neat', '~> 2.1'
 gem 'spring-commands-rspec', group: :development
 gem 'rspec-rails', '~> 3.6', group: [:development, :test]
 gem 'shoulda-matchers', group: :test
+gem "passwordless"
