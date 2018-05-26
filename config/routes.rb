@@ -3,5 +3,5 @@ Rails.application.routes.draw do
 
   root "trophies#index"
 
-  resources :trophies, only: [:index, :new]
+  resources :trophies, only: [:create, :index, :new]
 end

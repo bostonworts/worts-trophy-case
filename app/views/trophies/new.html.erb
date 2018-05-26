@@ -1,0 +1,11 @@
+<%= form_for(@trophy) do |f| %>
+  <% if @trophy.errors.any? %>
+    <%= @trophy.errors.full_messages %>
+  <% end %>
+
+  BJCP Score: <%= f.number_field :bjcp_score %>
+  Competition Date: <%= f.date_select :competition_date %>
+  Competition URL: <%= f.text_field :competition_url %>
+
+  <%= f.submit %>
+<% end %>

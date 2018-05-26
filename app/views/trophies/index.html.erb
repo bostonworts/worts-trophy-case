@@ -2,3 +2,24 @@
 <h1>Trophies</h1>
 
 <%= link_to "Add Trophy", new_trophy_path %>
+
+<table>
+  <thead>
+    <tr>
+      <td>Brewer</td>
+      <td>BJCP Score</td>
+      <td>Competition Date</td>
+      <td>Competition URL</td>
+    </tr>
+  </thead>
+  <tbody>
+    <% @trophies.each do |trophy| %>
+      <tr>
+        <td><%= trophy.user.full_name %></td>
+        <td><%= trophy.bjcp_score %></td>
+        <td><%= trophy.competition_date %></td>
+        <td><%= trophy.competition_url %></td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>
