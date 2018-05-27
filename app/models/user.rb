@@ -4,10 +4,6 @@ class User < ApplicationRecord
 
   passwordless_with :email
 
-  def current_worts_member?
-    !deactivated?
-  end
-
   def deactivated?
     deactivated_at.present?
   end
