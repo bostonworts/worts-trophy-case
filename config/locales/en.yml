@@ -5,6 +5,7 @@ en:
         bjcp_score: "BJCP Score"
         competition_date: "Competition Date"
         competition_url: "Competition URL"
+        place_context: "Placed in"
         recipe_url: "Recipe URL"
 
   date:

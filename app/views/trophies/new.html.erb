@@ -34,6 +34,15 @@
   </dl>
 
   <dl class="form-group">
+    <dt><%= f.label(:place) %></dt>
+    <dd>
+      <%= f.collection_select :place, 1..4, :itself, :ordinalize, { include_blank: "Didn't place" }, { class: "form-select" } %>
+      in
+      <%= f.collection_select :place_context, Trophy::PLACE_CONTEXTS, :itself, :titleize, { include_blank: "Didn't place" }, { class: "form-select" } %>
+    </dd>
+  </dl>
+
+  <dl class="form-group">
     <dt><%= f.label(:recipe_url) %></dt>
     <dd>
       <%= f.text_field :recipe_url, class: "form-control" %>

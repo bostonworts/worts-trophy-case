@@ -20,6 +20,8 @@ describe "submit trophy" do
 
     fill_required_fields
     fill_in :trophy_recipe_url, with: "https://iancanderson.com/brewlog/batches/001"
+    select 2, from: :trophy_place
+    select "Best Of Show", from: :trophy_place_context
     click_on "Create Trophy"
 
     expect(current_path).to eq("/")
