@@ -1,4 +1,11 @@
 en:
+  activerecord:
+    attributes:
+      trophy:
+        bjcp_score: "BJCP Score"
+        competition_date: "Competition Date"
+        competition_url: "Competition URL"
+
   date:
     formats:
       default:

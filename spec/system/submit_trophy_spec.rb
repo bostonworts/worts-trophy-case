@@ -5,20 +5,7 @@ describe "submit trophy" do
     worts_member = create(:user)
     login_as(worts_member)
 
-    click_link "Add Trophy"
-
-    # Now we're logged in so it doesn't redirect
-    expect(current_path).to eq("/trophies/new")
-
-    select 25, from: :trophy_bjcp_score
-
-    competition_date = Date.yesterday
-    select competition_date.year, from: :trophy_competition_date_1i
-    select competition_date.strftime("%B"), from: :trophy_competition_date_2i
-    select competition_date.day, from: :trophy_competition_date_3i
-
-    fill_in :trophy_competition_url, with: "http://bhc.wort.org"
-
+    fill_required_fields
     click_on "Create Trophy"
 
     expect(current_path).to eq("/")
@@ -27,18 +14,28 @@ describe "submit trophy" do
     expect(page).to have_content(worts_member.full_name)
   end
 
-  it "doesn't email a magic link to non-worts member" do
-    visit "/"
+  it "succeeds when filling in optional fields" do
+    worts_member = create(:user)
+    login_as(worts_member)
 
-    click_link "Add Trophy"
+    fill_required_fields
+    fill_in :trophy_recipe_url, with: "https://iancanderson.com/brewlog/batches/001"
+    click_on "Create Trophy"
 
-    # Submit login form with email address in worts list
-    expect(current_path).to eq("/users/sign_in")
+    expect(current_path).to eq("/")
 
-    fill_in "Worts email", with: "notamember@example.com"
-    click_on "Send magic link"
+    # Brewer should be in the trophy list now
+    expect(page).to have_content(worts_member.full_name)
+  end
 
-    emails = ActionMailer::Base.deliveries
-    expect(emails).to be_empty
+  def fill_required_fields
+    select 25, from: :trophy_bjcp_score
+
+    competition_date = Date.yesterday
+    select competition_date.year, from: :trophy_competition_date_1i
+    select competition_date.strftime("%B"), from: :trophy_competition_date_2i
+    select competition_date.day, from: :trophy_competition_date_3i
+
+    fill_in :trophy_competition_url, with: "http://bhc.wort.org"
   end
 end

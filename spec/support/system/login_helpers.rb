@@ -20,5 +20,9 @@ module System
 
     # It redirects to root in test because the session is cleared out
     # In development, it redirects you back to where you wanted to go initially
+    click_link "Add Trophy"
+
+    # Now we're logged in so it doesn't redirect
+    expect(current_path).to eq("/trophies/new")
   end
 end

@@ -13,21 +13,21 @@
   <h2>Add a trophy for <%= current_user.full_name %></h2>
 
   <dl class="form-group">
-    <dt>BJCP Score:</dt>
+    <dt><%= f.label(:bjcp_score) %></dt>
     <dd>
       <%= f.collection_select :bjcp_score, 1..50, :itself, :itself, {}, { class: "form-select" } %>
     </dd>
   </dl>
 
   <dl class="form-group">
-    <dt>Competition Date:</dt>
+    <dt><%= f.label(:competition_date) %></dt>
     <dd>
       <%= f.date_select :competition_date, { end_year: Date.today.year }, { class: "form-select" } %>
     </dd>
   </dl>
 
   <dl class="form-group">
-    <dt>Competition URL:</dt>
+    <dt><%= f.label(:competition_url) %></dt>
     <dd>
       <%= f.text_field :competition_url, class: "form-control" %>
     </dd>
