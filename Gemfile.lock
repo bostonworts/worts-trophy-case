@@ -286,6 +286,7 @@ DEPENDENCIES
   awesome_print
   bootsnap
   bundler-audit (>= 0.5.0)
+  capybara
   dotenv-rails
   factory_bot_rails
   flutie
