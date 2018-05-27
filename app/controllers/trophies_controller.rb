@@ -26,6 +26,7 @@ class TrophiesController < ApplicationController
       :bjcp_score,
       :competition_date,
       :competition_url,
+      :photo,
       :place,
       :place_context,
       :recipe_url,

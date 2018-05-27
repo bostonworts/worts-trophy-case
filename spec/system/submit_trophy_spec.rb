@@ -30,6 +30,21 @@ describe "submit trophy" do
     expect(page).to have_content(worts_member.full_name)
   end
 
+  it "succeeds when attaching an image" do
+    worts_member = create(:user)
+    login_as(worts_member)
+
+    fill_required_fields
+    attach_file("trophy_photo", "spec/fixture_images/blueribbon.png")
+
+    click_on "Create Trophy"
+
+    expect(current_path).to eq("/")
+
+    expect(page).to have_content(worts_member.full_name)
+    expect(page).to have_css("a svg.octicon-file-media")
+  end
+
   def fill_required_fields
     select 25, from: :trophy_bjcp_score
 

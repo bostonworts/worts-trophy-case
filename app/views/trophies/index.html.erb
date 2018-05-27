@@ -4,8 +4,8 @@
       <td>Brewer</td>
       <td>BJCP Score</td>
       <td>Comp Date</td>
-      <td>Comp Link</td>
       <td>Place</td>
+      <td>Links</td>
     </tr>
   </thead>
   <tbody>
@@ -14,12 +14,18 @@
         <td><%= trophy.user.full_name %></td>
         <td><%= trophy.bjcp_score %></td>
         <td><%= trophy.competition_date %></td>
+        <td><%= trophy.place_description %></td>
         <td>
           <%= link_to trophy.competition_url do %>
             <%= octicon "law", height: 24,  class: "right left" %>
           <% end %>
+
+          <% if trophy.photo.attached? %>
+            <%= link_to url_for(trophy.photo) do %>
+              <%= octicon "file-media", height: 24,  class: "right left" %>
+            <% end %>
+          <% end %>
         </td>
-        <td><%= trophy.place_description %></td>
       </tr>
     <% end %>
   </tbody>

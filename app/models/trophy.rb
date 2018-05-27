@@ -2,6 +2,7 @@ class Trophy < ApplicationRecord
   PLACE_CONTEXTS = %w(best_of_show category)
 
   belongs_to :user
+  has_one_attached :photo
 
   validates :bjcp_score, numericality: { greater_than: 0, less_than: 51 }
   validates :competition_date, presence: true

@@ -38,5 +38,12 @@
     </dd>
   <% end %>
 
+  <%= f.form_group :photo do %>
+    <dt><%= f.label(:photo) %></dt>
+    <dd>
+      <%= f.file_field :photo, direct_upload: true %>
+    </dd>
+  <% end %>
+
   <%= f.submit class: "btn btn-primary" %>
 <% end %>
