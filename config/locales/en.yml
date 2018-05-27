@@ -20,6 +20,11 @@ en:
       trophy:
         recipe_url: "Recipe URL (optional)"
 
+  passwordless:
+    mailer:
+      subject: "Your magic link ✨"
+      magic_link: "Hi fellow Wort! Here's your key to the trophy case: %{link}"
+
   time:
     formats:
       default:

@@ -25,5 +25,8 @@ module WortsTrophyCase
     config.action_controller.action_on_unpermitted_parameters = :raise
     config.load_defaults 5.2
     config.generators.system_tests = nil
+    config.action_mailer.default_options = {
+      from: "noreply@#{ENV.fetch("APPLICATION_HOST")}"
+    }
   end
 end
