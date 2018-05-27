@@ -10,11 +10,31 @@
   </head>
 
   <body>
-    <% if flash[:error] %>
-      <div class="error"><%= flash[:error] %></div>
-    <% end %>
-
     <div class="container">
+      <h1>Boston Worts Trophy case</h1>
+
+      <nav class="UnderlineNav UnderlineNav--right my-3">
+        <div class="UnderlineNav-actions">
+          <%= link_to "Add Trophy", "/trophies/new", class: "btn" %>
+        </div>
+
+        <div class="UnderlineNav-body">
+          <%= nav_link "Trophies", "/" %>
+
+          <% if current_user %>
+            <%= nav_link "My Profile", edit_my_profile_path %>
+          <% end %>
+        </div>
+      </nav>
+
+      <% if flash[:error] %>
+        <div class="flash flash-error my-3"><%= flash[:error] %></div>
+      <% end %>
+
+      <% if flash[:notice] %>
+        <div class="flash flash-success my-3"><%= flash[:notice] %></div>
+      <% end %>
+
       <%= yield %>
     </div>
   </body>
