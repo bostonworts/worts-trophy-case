@@ -7,7 +7,7 @@ Rails.application.configure do
   config.assets.js_compressor = :uglifier
   config.assets.compile = false
   config.action_controller.asset_host = ENV.fetch("ASSET_HOST", ENV.fetch("APPLICATION_HOST"))
-  config.active_storage.service = :local
+  config.active_storage.service = :amazon
   config.log_level = :debug
   config.log_tags = [ :request_id ]
   config.action_mailer.perform_caching = false
