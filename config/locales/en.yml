@@ -18,6 +18,7 @@ en:
   helpers:
     label:
       trophy:
+        photo: "Photo (optional)"
         recipe_url: "Recipe URL (optional)"
 
   passwordless:
