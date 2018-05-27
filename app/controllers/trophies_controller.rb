@@ -26,6 +26,7 @@ class TrophiesController < ApplicationController
       :bjcp_score,
       :competition_date,
       :competition_url,
+      :recipe_url,
     ).merge(user: current_user)
   end
 end

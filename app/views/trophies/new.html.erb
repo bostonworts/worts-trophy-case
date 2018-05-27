@@ -33,5 +33,12 @@
     </dd>
   </dl>
 
+  <dl class="form-group">
+    <dt><%= f.label(:recipe_url) %></dt>
+    <dd>
+      <%= f.text_field :recipe_url, class: "form-control" %>
+    </dd>
+  </dl>
+
   <%= f.submit class: "btn btn-primary" %>
 <% end %>

@@ -5,6 +5,7 @@ en:
         bjcp_score: "BJCP Score"
         competition_date: "Competition Date"
         competition_url: "Competition URL"
+        recipe_url: "Recipe URL"
 
   date:
     formats:
@@ -12,6 +13,11 @@ en:
         "%m/%d/%Y"
       with_weekday:
         "%a %m/%d/%y"
+
+  helpers:
+    label:
+      trophy:
+        recipe_url: "Recipe URL (optional)"
 
   time:
     formats:
