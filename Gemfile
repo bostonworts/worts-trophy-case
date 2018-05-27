@@ -43,7 +43,6 @@ end
 group :test do
   gem "formulaic"
   gem "launchy"
-  gem "selenium-webdriver"
   gem "simplecov", require: false
   gem "timecop"
   gem "webmock"
@@ -58,3 +57,4 @@ gem 'shoulda-matchers', group: :test
 gem "passwordless"
 gem 'octicons_helper'
 gem "capybara"
+gem "selenium-webdriver"
