@@ -58,3 +58,4 @@ gem "passwordless"
 gem 'octicons_helper'
 gem "capybara"
 gem "selenium-webdriver"
+gem "aws-sdk-s3", require: false
