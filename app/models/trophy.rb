@@ -16,4 +16,10 @@ class Trophy < ApplicationRecord
     # Don't allow blank string for place_context
     self.place_context = place_context.presence
   end
+
+  def place_description
+    if place
+      "#{place.ordinalize} in #{place_context.titleize}"
+    end
+  end
 end

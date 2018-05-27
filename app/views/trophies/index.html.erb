@@ -3,22 +3,28 @@
 
 <%= link_to "Add Trophy", new_trophy_path %>
 
-<table>
+<table class="trophies-table">
   <thead>
-    <tr class="clearfix">
+    <tr>
       <td>Brewer</td>
       <td>BJCP Score</td>
       <td>Competition Date</td>
-      <td>Competition URL</td>
+      <td>Competition Link</td>
+      <td>Place</td>
     </tr>
   </thead>
   <tbody>
     <% @trophies.each do |trophy| %>
-      <tr class="clearfix">
-        <td class="col-3"><%= trophy.user.full_name %></td>
-        <td class="col-3"><%= trophy.bjcp_score %></td>
-        <td class="col-3"><%= trophy.competition_date %></td>
-        <td class="col-3"><%= trophy.competition_url %></td>
+      <tr>
+        <td><%= trophy.user.full_name %></td>
+        <td><%= trophy.bjcp_score %></td>
+        <td><%= trophy.competition_date %></td>
+        <td>
+          <%= link_to trophy.competition_url do %>
+            <%= octicon "law", height: 24,  class: "right left" %>
+          <% end %>
+        </td>
+        <td><%= trophy.place_description %></td>
       </tr>
     <% end %>
   </tbody>
