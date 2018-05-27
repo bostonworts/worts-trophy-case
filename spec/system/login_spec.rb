@@ -15,4 +15,11 @@ describe "logging in" do
     emails = ActionMailer::Base.deliveries
     expect(emails).to be_empty
   end
+
+  it "doesn't email a magic link to deactivated worts member" do
+    deactivated_user = create(:user, :deactivated)
+    login_as(deactivated_user)
+
+    expect(page).to have_content("It looks like #{deactivated_user.email} is no longer a Boston Worts member.")
+  end
 end

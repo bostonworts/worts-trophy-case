@@ -1,5 +1,4 @@
 FactoryBot.define do
-
   factory :user do
     sequence :full_name do |n|
       "Brewer #{n}"
@@ -10,5 +9,9 @@ FactoryBot.define do
     end
 
     admin false
+
+    trait :deactivated do
+      deactivated_at { Time.now }
+    end
   end
 end
