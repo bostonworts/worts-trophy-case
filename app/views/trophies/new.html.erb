@@ -1,53 +1,42 @@
-<%= form_for(@trophy) do |f| %>
-  <% if @trophy.errors.any? %>
-    <h2>Errors:</h2>
-    <ul>
-      <% @trophy.errors.full_messages.each do |error| %>
-        <li>
-          <%= error %>
-        </li>
-      <% end %>
-    </p>
-  <% end %>
-
+<%= form_for @trophy, builder: FormGroupBuilder do |f| %>
   <h2>Add a trophy for <%= current_user.full_name %></h2>
 
-  <dl class="form-group">
+  <%= f.form_group :bjcp_score do %>
     <dt><%= f.label(:bjcp_score) %></dt>
     <dd>
       <%= f.collection_select :bjcp_score, 1..50, :itself, :itself, {}, { class: "form-select" } %>
     </dd>
-  </dl>
+  <% end %>
 
-  <dl class="form-group">
+  <%= f.form_group :competition_date do %>
     <dt><%= f.label(:competition_date) %></dt>
     <dd>
       <%= f.date_select :competition_date, { end_year: Date.today.year }, { class: "form-select" } %>
     </dd>
-  </dl>
+  <% end %>
 
-  <dl class="form-group">
+  <%= f.form_group :competition_url do %>
     <dt><%= f.label(:competition_url) %></dt>
     <dd>
       <%= f.text_field :competition_url, class: "form-control" %>
     </dd>
-  </dl>
+  <% end %>
 
-  <dl class="form-group">
+  <%= f.form_group :place do %>
     <dt><%= f.label(:place) %></dt>
     <dd>
       <%= f.collection_select :place, 1..4, :itself, :ordinalize, { include_blank: "Didn't place" }, { class: "form-select" } %>
       in
       <%= f.collection_select :place_context, Trophy::PLACE_CONTEXTS, :itself, :titleize, { include_blank: "Didn't place" }, { class: "form-select" } %>
     </dd>
-  </dl>
+  <% end %>
 
-  <dl class="form-group">
+  <%= f.form_group :recipe_url do %>
     <dt><%= f.label(:recipe_url) %></dt>
     <dd>
       <%= f.text_field :recipe_url, class: "form-control" %>
     </dd>
-  </dl>
+  <% end %>
 
   <%= f.submit class: "btn btn-primary" %>
 <% end %>
