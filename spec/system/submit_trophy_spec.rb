@@ -46,6 +46,7 @@ describe "submit trophy" do
   end
 
   def fill_required_fields
+    select "3B - Czech Premium Pale Lager", from: :trophy_subcategory_id
     select 25, from: :trophy_bjcp_score
 
     competition_date = Date.yesterday

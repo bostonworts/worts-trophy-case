@@ -30,6 +30,7 @@ class TrophiesController < ApplicationController
       :place,
       :place_context,
       :recipe_url,
+      :subcategory_id,
     ).merge(user: current_user)
   end
 end

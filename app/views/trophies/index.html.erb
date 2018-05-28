@@ -2,6 +2,7 @@
   <thead>
     <tr>
       <td>Brewer</td>
+      <td>Category</td>
       <td>BJCP Score</td>
       <td>Comp Date</td>
       <td>Place</td>
@@ -12,6 +13,7 @@
     <% @trophies.each do |trophy| %>
       <tr>
         <td><%= trophy.user.full_name %></td>
+        <td><%= trophy.subcategory&.bjcp_id %></td>
         <td><%= trophy.bjcp_score %></td>
         <td><%= trophy.competition_date %></td>
         <td><%= trophy.place_description %></td>

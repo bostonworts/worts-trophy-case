@@ -13,6 +13,9 @@ bundle check || bundle install
 # Set up database and add any development seed data
 bin/rails dev:prime
 
+# Load styles into test database
+RAILS_ENV=test bin/rails bjcp:load_styles
+
 if [ ! -d .git/safe ] && echo $PATH | grep .git/safe > /dev/null; then
   echo "-----------------------------------------------------------------------"
   echo

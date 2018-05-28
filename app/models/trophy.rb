@@ -1,6 +1,7 @@
 class Trophy < ApplicationRecord
   PLACE_CONTEXTS = %w(best_of_show category)
 
+  belongs_to :subcategory
   belongs_to :user
   has_one_attached :photo
 
