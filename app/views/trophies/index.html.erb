@@ -13,7 +13,13 @@
     <% @trophies.each do |trophy| %>
       <tr>
         <td><%= trophy.user.full_name %></td>
-        <td><%= trophy.subcategory&.bjcp_id %></td>
+        <td>
+          <% if trophy.subcategory&.bjcp_id %>
+            <span class="Label Label--orange">
+              <%= trophy.subcategory&.bjcp_id %>
+            </span>
+          <% end %>
+        </td>
         <td>
           <span class="Counter"><%= trophy.bjcp_score %></span>
         </td>
