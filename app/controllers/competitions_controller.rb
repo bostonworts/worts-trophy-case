@@ -1,4 +1,6 @@
 class CompetitionsController < ApplicationController
+  before_action :require_user!
+
   def new
     @competition = Competition.new
   end
