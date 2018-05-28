@@ -15,17 +15,17 @@
     <div class="container">
       <h1>Boston Worts Trophy Case</h1>
 
-      <nav class="UnderlineNav UnderlineNav--right my-3">
-        <div class="UnderlineNav-actions">
-          <%= link_to "Add Trophy", "/trophies/new", class: "btn" %>
-        </div>
-
+      <nav class="UnderlineNav my-3">
         <div class="UnderlineNav-body">
           <%= nav_link "Trophies", "/" %>
 
           <% if current_user %>
             <%= nav_link "My Profile", edit_my_profile_path %>
           <% end %>
+        </div>
+
+        <div class="UnderlineNav-actions">
+          <%= link_to "Add Trophy", "/trophies/new", class: "btn" %>
         </div>
       </nav>
 
