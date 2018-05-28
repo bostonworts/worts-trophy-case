@@ -4,7 +4,7 @@
       <td>Brewer</td>
       <td>Style</td>
       <td>Score</td>
-      <td>Comp Date</td>
+      <td>Date</td>
       <td>Place</td>
       <td>Links</td>
     </tr>
@@ -23,7 +23,9 @@
         <td>
           <span class="Counter"><%= trophy.bjcp_score %></span>
         </td>
-        <td><%= trophy.competition_date %></td>
+        <td>
+          <%= l trophy.competition_date, format: :short %>
+        </td>
         <td><%= trophy.place_description %></td>
         <td>
           <%= link_to trophy.competition_url do %>
