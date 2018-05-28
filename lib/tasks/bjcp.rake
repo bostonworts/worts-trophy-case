@@ -1,5 +1,5 @@
 namespace :bjcp do
-  task :load_styles do
+  task load_styles: :environment do
     json = JSON.parse(File.read("config/styleguides/2015.json"))
     classes = json.dig("styleguide", "class")
     categories = classes.flat_map do |klass|
