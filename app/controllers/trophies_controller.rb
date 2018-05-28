@@ -13,10 +13,24 @@ class TrophiesController < ApplicationController
     @trophy = Trophy.new(trophy_params)
 
     if @trophy.save
-      redirect_to root_path, flash: { notice: "Your trophy was created!" }
+      redirect_to root_path, notice: "Your trophy was created!"
     else
       render "new"
     end
+  end
+
+  def update
+    @trophy = Trophy.find(params[:id])
+
+    if @trophy.update(trophy_params)
+      redirect_to root_path, notice: "Trophy successfully updated!"
+    else
+      render "new"
+    end
+  end
+
+  def edit
+    @trophy = Trophy.find(params[:id])
   end
 
   def destroy

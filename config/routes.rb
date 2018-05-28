@@ -4,5 +4,5 @@ Rails.application.routes.draw do
   root "trophies#index"
 
   resource :my_profile, only: [:edit, :update], controller: :profile
-  resources :trophies, only: [:create, :destroy, :index, :new]
+  resources :trophies
 end
