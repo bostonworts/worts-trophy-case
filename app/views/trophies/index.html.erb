@@ -14,7 +14,9 @@
       <tr>
         <td><%= trophy.user.full_name %></td>
         <td><%= trophy.subcategory&.bjcp_id %></td>
-        <td><%= trophy.bjcp_score %></td>
+        <td>
+          <span class="Counter"><%= trophy.bjcp_score %></span>
+        </td>
         <td><%= trophy.competition_date %></td>
         <td><%= trophy.place_description %></td>
         <td>
