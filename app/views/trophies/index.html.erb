@@ -24,6 +24,12 @@
             <%= octicon "law", height: 24,  class: "right left" %>
           <% end %>
 
+          <% if trophy.recipe_url.present? %>
+            <%= link_to trophy.recipe_url do %>
+              <%= octicon "link-external", height: 24,  class: "right left" %>
+            <% end %>
+          <% end %>
+
           <% if trophy.photo.attached? %>
             <%= link_to url_for(trophy.photo) do %>
               <%= octicon "file-media", height: 24,  class: "right left" %>
