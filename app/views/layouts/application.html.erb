@@ -12,21 +12,16 @@
   </head>
 
   <body>
-    <div class="container">
+    <div class="container-md">
       <h1>Boston Worts Trophy Case</h1>
 
-      <nav class="UnderlineNav my-3">
-        <div class="UnderlineNav-body">
-          <%= nav_link "Trophies", "/" %>
+      <nav class="menu" aria-label="Menu">
+        <%= nav_link "Trophies", "/" %>
+        <%= nav_link "Add Trophy", "/trophies/new" %>
 
-          <% if current_user %>
-            <%= nav_link "My Profile", edit_my_profile_path %>
-          <% end %>
-        </div>
-
-        <div class="UnderlineNav-actions">
-          <%= link_to "Add Trophy", "/trophies/new", class: "btn" %>
-        </div>
+        <% if current_user %>
+          <%= nav_link "My Profile", edit_my_profile_path %>
+        <% end %>
       </nav>
 
       <% if flash[:error] %>
