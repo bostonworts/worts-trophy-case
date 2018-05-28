@@ -1,0 +1,31 @@
+<%= form_for @competition, builder: FormGroupBuilder do |f| %>
+  <%= f.form_group :name do %>
+    <dt><%= f.label(:name) %></dt>
+    <dd>
+      <%= f.text_field :name, class: "form-control" %>
+    </dd>
+  <% end %>
+
+  <%= f.form_group :date do %>
+    <dt><%= f.label(:date) %></dt>
+    <dd>
+      <%= f.date_select :date, { end_year: Date.today.year }, { class: "form-select" } %>
+    </dd>
+  <% end %>
+
+  <%= f.form_group :competition_type do %>
+    <dt><%= f.label(:competition_type) %></dt>
+    <dd>
+      <%= f.collection_select :competition_type, CompetitionType.all, :key, :description, {}, { class: "form-select" } %>
+    </dd>
+  <% end %>
+
+  <%= f.form_group :url do %>
+    <dt><%= f.label(:url) %></dt>
+    <dd>
+      <%= f.text_field :url, class: "form-control" %>
+    </dd>
+  <% end %>
+
+  <%= f.submit class: "btn btn-primary" %>
+<% end %>

@@ -3,6 +3,7 @@ Rails.application.routes.draw do
 
   root "trophies#index"
 
+  resources :competitions, only: [:create, :new]
   resource :my_profile, only: [:edit, :update], controller: :profile
   resources :trophies
 end
