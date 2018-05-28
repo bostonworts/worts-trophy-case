@@ -1,4 +1,11 @@
 <%= form_for trophy, builder: FormGroupBuilder do |f| %>
+  <%= f.form_group :competition_id do %>
+    <dt><%= f.label(:competition_id) %></dt>
+    <dd>
+    <%= f.collection_select :competition_id, Competition.all, :id, :description, {}, { class: "form-select" } %>
+    </dd>
+  <% end %>
+
   <%= f.form_group :subcategory_id do %>
     <dt><%= f.label(:subcategory_id) %></dt>
     <dd>
@@ -10,20 +17,6 @@
     <dt><%= f.label(:bjcp_score) %></dt>
     <dd>
       <%= f.collection_select :bjcp_score, 1..50, :itself, :itself, {}, { class: "form-select" } %>
-    </dd>
-  <% end %>
-
-  <%= f.form_group :competition_date do %>
-    <dt><%= f.label(:competition_date) %></dt>
-    <dd>
-      <%= f.date_select :competition_date, { end_year: Date.today.year }, { class: "form-select" } %>
-    </dd>
-  <% end %>
-
-  <%= f.form_group :competition_url do %>
-    <dt><%= f.label(:competition_url) %></dt>
-    <dd>
-      <%= f.text_field :competition_url, class: "form-control" %>
     </dd>
   <% end %>
 

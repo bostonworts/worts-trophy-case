@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2018_05_28_003759) do
+ActiveRecord::Schema.define(version: 2018_05_28_184846) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -44,6 +44,15 @@ ActiveRecord::Schema.define(version: 2018_05_28_003759) do
     t.datetime "updated_at", null: false
   end
 
+  create_table "competitions", force: :cascade do |t|
+    t.string "url", null: false
+    t.date "date", null: false
+    t.string "name", null: false
+    t.string "competition_type", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+  end
+
   create_table "passwordless_sessions", force: :cascade do |t|
     t.string "authenticatable_type"
     t.bigint "authenticatable_id"
@@ -68,8 +77,6 @@ ActiveRecord::Schema.define(version: 2018_05_28_003759) do
 
   create_table "trophies", force: :cascade do |t|
     t.integer "bjcp_score", null: false
-    t.date "competition_date", null: false
-    t.string "competition_url", null: false
     t.integer "place"
     t.string "place_context"
     t.string "recipe_url"
@@ -77,6 +84,8 @@ ActiveRecord::Schema.define(version: 2018_05_28_003759) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.bigint "subcategory_id"
+    t.bigint "competition_id"
+    t.index ["competition_id"], name: "index_trophies_on_competition_id"
     t.index ["subcategory_id"], name: "index_trophies_on_subcategory_id"
     t.index ["user_id"], name: "index_trophies_on_user_id"
   end
@@ -92,6 +101,7 @@ ActiveRecord::Schema.define(version: 2018_05_28_003759) do
   end
 
   add_foreign_key "subcategories", "categories"
+  add_foreign_key "trophies", "competitions"
   add_foreign_key "trophies", "subcategories"
   add_foreign_key "trophies", "users"
 end

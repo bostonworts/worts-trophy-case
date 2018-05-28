@@ -3,9 +3,10 @@ require "rails_helper"
 describe "submit trophy" do
   it "succeeds with required fields after logging in via email" do
     worts_member = create(:user)
+    competition = create(:competition)
     login_as(worts_member)
 
-    fill_required_fields
+    fill_required_fields(competition: competition)
     click_on "Create Trophy"
 
     expect(current_path).to eq("/")
@@ -16,9 +17,10 @@ describe "submit trophy" do
 
   it "succeeds when filling in optional fields" do
     worts_member = create(:user)
+    competition = create(:competition)
     login_as(worts_member)
 
-    fill_required_fields
+    fill_required_fields(competition: competition)
     fill_in :trophy_recipe_url, with: "https://iancanderson.com/brewlog/batches/001"
     select 2, from: :trophy_place
     select "Best Of Show", from: :trophy_place_context
@@ -32,9 +34,10 @@ describe "submit trophy" do
 
   it "succeeds when attaching an image" do
     worts_member = create(:user)
+    competition = create(:competition)
     login_as(worts_member)
 
-    fill_required_fields
+    fill_required_fields(competition: competition)
     attach_file("trophy_photo", "spec/fixture_images/blueribbon.png")
 
     click_on "Create Trophy"
@@ -45,15 +48,9 @@ describe "submit trophy" do
     expect(page).to have_css("a svg.octicon-file-media")
   end
 
-  def fill_required_fields
+  def fill_required_fields(competition:)
     select "3B - Czech Premium Pale Lager", from: :trophy_subcategory_id
     select 25, from: :trophy_bjcp_score
-
-    competition_date = Date.yesterday
-    select competition_date.year, from: :trophy_competition_date_1i
-    select competition_date.strftime("%B"), from: :trophy_competition_date_2i
-    select competition_date.day, from: :trophy_competition_date_3i
-
-    fill_in :trophy_competition_url, with: "http://bhc.wort.org"
+    select competition.description, from: :trophy_competition_id
   end
 end

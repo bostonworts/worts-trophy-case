@@ -2,7 +2,7 @@ class TrophiesController < ApplicationController
   before_action :require_user!, except: [:index]
 
   def index
-    @trophies = Trophy.order(competition_date: :desc)
+    @trophies = Trophy.joins(:competition).merge(Competition.order(date: :desc))
   end
 
   def new
@@ -48,8 +48,7 @@ class TrophiesController < ApplicationController
   def trophy_params
     params.require(:trophy).permit(
       :bjcp_score,
-      :competition_date,
-      :competition_url,
+      :competition_id,
       :photo,
       :place,
       :place_context,

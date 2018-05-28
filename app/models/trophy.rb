@@ -1,13 +1,13 @@
 class Trophy < ApplicationRecord
   PLACE_CONTEXTS = %w(best_of_show category)
 
+  belongs_to :competition
   belongs_to :subcategory
   belongs_to :user
   has_one_attached :photo
 
   validates :bjcp_score, numericality: { greater_than: 0, less_than: 51 }
-  validates :competition_date, presence: true
-  validates :competition_url, presence: true
+  validates :competition, presence: true
   validates :place, inclusion: { allow_nil: true, in: 1..4 }
   validates :place_context, inclusion: { allow_nil: true, in: PLACE_CONTEXTS }
 

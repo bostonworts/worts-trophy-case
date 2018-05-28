@@ -4,8 +4,7 @@ RSpec.describe Trophy, type: :model do
   it "is valid if all required fields are filled out and valid" do
     trophy = Trophy.new(
       bjcp_score: 25,
-      competition_date: Date.yesterday,
-      competition_url: "http://bhc.wort.org",
+      competition: create(:competition),
       subcategory: Subcategory.last,
       user: create(:user)
     )
@@ -16,8 +15,7 @@ RSpec.describe Trophy, type: :model do
   it "is valid if all required and optional fields are filled out and valid" do
     trophy = Trophy.new(
       bjcp_score: 25,
-      competition_date: Date.yesterday,
-      competition_url: "http://bhc.wort.org",
+      competition: create(:competition),
       place: 1,
       place_context: "category",
       subcategory: Subcategory.last,
