@@ -2,7 +2,7 @@ class TrophiesController < ApplicationController
   before_action :require_user!, except: [:index]
 
   def index
-    @trophies = Trophy.all
+    @trophies = Trophy.order(competition_date: :desc)
   end
 
   def new
