@@ -20,27 +20,39 @@
             </span>
           <% end %>
         </td>
+
         <td>
           <span class="Counter"><%= trophy.bjcp_score %></span>
         </td>
+
         <td>
           <%= l trophy.competition_date, format: :short %>
         </td>
-        <td><%= trophy.place_description %></td>
+
+        <td>
+          <%= trophy.place_description %>
+        </td>
+
         <td>
           <%= link_to trophy.competition_url do %>
-            <%= octicon "law", height: 24,  class: "right left" %>
+            <%= octicon "law", height: 24 %>
           <% end %>
 
           <% if trophy.recipe_url.present? %>
             <%= link_to trophy.recipe_url do %>
-              <%= octicon "file", height: 24,  class: "right left" %>
+              <%= octicon "file", height: 24 %>
             <% end %>
           <% end %>
 
           <% if trophy.photo.attached? %>
             <%= link_to url_for(trophy.photo) do %>
-              <%= octicon "file-media", height: 24,  class: "right left" %>
+              <%= octicon "file-media", height: 24 %>
+            <% end %>
+          <% end %>
+
+          <% if current_user&.can_delete?(trophy) %>
+            <%= link_to trophy_path(trophy), "aria-label": "Delete Trophy", method: :delete, data: { confirm: "Are you sure you want to delete this trophy?" } do %>
+              <%= octicon "trashcan", height: 24 %>
             <% end %>
           <% end %>
         </td>

@@ -9,5 +9,10 @@ RSpec.configure do |config|
 end
 
 Capybara.register_driver :rack_test do |app|
-  Capybara::RackTest::Driver.new(app, headers: { 'HTTP_USER_AGENT' => 'Capybara' })
+  Capybara::RackTest::Driver.new(
+    app,
+    headers: { 'HTTP_USER_AGENT' => 'Capybara' },
+    respect_data_method: true,
+  )
 end
+Capybara.enable_aria_label = true

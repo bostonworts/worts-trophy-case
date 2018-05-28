@@ -4,6 +4,10 @@ class User < ApplicationRecord
 
   passwordless_with :email
 
+  def can_delete?(trophy)
+    trophy.user == self
+  end
+
   def deactivated?
     deactivated_at.present?
   end

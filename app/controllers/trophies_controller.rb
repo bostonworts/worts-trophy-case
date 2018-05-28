@@ -19,6 +19,16 @@ class TrophiesController < ApplicationController
     end
   end
 
+  def destroy
+    trophy = Trophy.find(params[:id])
+
+    if current_user.can_delete?(trophy) && trophy.destroy
+      redirect_to root_path, notice: "Trophy successfully deleted"
+    else
+      redirect_to root_path, error: "Trophy could not be deleted"
+    end
+  end
+
   private
 
   def trophy_params
