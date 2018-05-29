@@ -1,9 +1,14 @@
 <%= form_for trophy, builder: FormGroupBuilder do |f| %>
   <%= f.form_group :competition_id do %>
     <dt><%= f.label(:competition_id) %></dt>
-    <dd>
+    <dd class="pb-2">
     <%= f.collection_select :competition_id, Competition.all, :id, :description, {}, { class: "form-select" } %>
     </dd>
+    <p>
+      If your competition isn't listed, add it
+      <%= link_to "here", new_competition_path %>
+      first.
+    </p>
   <% end %>
 
   <%= f.form_group :subcategory_id do %>
