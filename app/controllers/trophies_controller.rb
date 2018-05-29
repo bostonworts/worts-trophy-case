@@ -7,7 +7,13 @@ class TrophiesController < ApplicationController
               else
                 Season.current
               end
+
+    @competitions_in_season = Competition.in_season(@season).order(:name)
     @trophies = Trophy.in_season(@season).date_descending
+
+    if competition_id = params[:competition_id].presence
+      @trophies = @trophies.where(competition_id: competition_id)
+    end
   end
 
   def new
@@ -18,7 +24,7 @@ class TrophiesController < ApplicationController
     @trophy = Trophy.new(trophy_params)
 
     if @trophy.save
-      redirect_to root_path, notice: "Your trophy was created!"
+      redirect_to trophies_path, notice: "Your trophy was created!"
     else
       render "new"
     end
@@ -28,7 +34,7 @@ class TrophiesController < ApplicationController
     @trophy = Trophy.find(params[:id])
 
     if @trophy.update(trophy_params)
-      redirect_to root_path, notice: "Trophy successfully updated!"
+      redirect_to trophies_path, notice: "Trophy successfully updated!"
     else
       render "new"
     end

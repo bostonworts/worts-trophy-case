@@ -9,7 +9,7 @@ describe "submit trophy" do
     fill_required_fields(competition: competition)
     click_on "Create Trophy"
 
-    expect(current_path).to eq("/")
+    expect(current_path).to eq("/trophies")
 
     # Brewer should be in the trophy list now
     expect(page).to have_content(worts_member.full_name)
@@ -26,7 +26,7 @@ describe "submit trophy" do
     select "Best Of Show", from: :trophy_place_context
     click_on "Create Trophy"
 
-    expect(current_path).to eq("/")
+    expect(current_path).to eq("/trophies")
 
     # Brewer should be in the trophy list now
     expect(page).to have_content(worts_member.full_name)
@@ -42,7 +42,7 @@ describe "submit trophy" do
 
     click_on "Create Trophy"
 
-    expect(current_path).to eq("/")
+    expect(current_path).to eq("/trophies")
 
     expect(page).to have_content(worts_member.full_name)
     expect(page).to have_css("a svg.octicon-file-media")

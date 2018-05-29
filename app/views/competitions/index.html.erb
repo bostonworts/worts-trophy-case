@@ -1,0 +1,24 @@
+<% @competitions.each do |competition| %>
+  <div class="Box my-3">
+    <div class="Box-header">
+      <h3 class="Box-title">
+        <%= link_to trophies_by_season_path(competition.season, competition_id: competition) do %>
+          <%= l competition.date, format: :short %>
+          :
+          <%= competition.name %>
+        <% end %>
+      </h3>
+    </div>
+    <ul>
+      <% %w(best_of_show category).each do |context| %>
+        <% if competition.trophies.placed_in(context).any? %>
+          <li class="Box-row">
+            <span class="category-awards-label"><%= context.titleize %> Awards:</span>
+
+            <%= render "medals", competition: competition, context: context %>
+          </li>
+        <% end %>
+      <% end %>
+    </ul>
+  </div>
+<% end %>

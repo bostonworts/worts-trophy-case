@@ -7,7 +7,7 @@ describe "Trophy archive" do
     last_season_competition = create(:competition, date: last_season_date)
     last_season_trophy = create(:trophy, competition: last_season_competition)
 
-    visit "/"
+    visit "/trophies"
 
     expect(page).to have_selected_season(this_season_trophy.season)
     expect(page).to have_trophy_row(this_season_trophy)

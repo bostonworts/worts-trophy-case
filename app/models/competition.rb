@@ -1,4 +1,6 @@
 class Competition < ApplicationRecord
+  has_many :trophies
+
   validates :name, presence: true
   validates :date, presence: true
   validates :url, presence: true
@@ -12,6 +14,12 @@ class Competition < ApplicationRecord
     pluck(:date).map do |date|
       Season.for_date(date)
     end.uniq.sort.reverse
+  end
+
+  def medal_counts(context)
+    trophies.placed_in(context).group(:place).order(:place).count.map do |place, count|
+      [Medal.new(place, context), count]
+    end
   end
 
   def description

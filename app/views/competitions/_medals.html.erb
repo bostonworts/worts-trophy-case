@@ -1,0 +1,5 @@
+<%= link_to trophies_by_season_path(competition.season, competition_id: competition), class: "no-underline" do %>
+  <%= content_tag(:span, class: "medals") do %>
+    <% competition.medal_counts(context).each do |medal, count| %><%= medal.icon * count %><% end %>
+  <% end %>
+<% end %>

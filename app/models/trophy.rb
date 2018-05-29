@@ -17,11 +17,15 @@ class Trophy < ApplicationRecord
   validates :place, presence: true, if: -> { place_context.present? }
   validates :place_context, presence: true, if: -> { place.present? }
 
+  scope :date_descending, -> {
+    joins(:competition).merge(Competition.order(date: :desc))
+  }
   scope :in_season, ->(season) {
     joins(:competition).merge(Competition.in_season(season))
   }
-  scope :date_descending, -> {
-    joins(:competition).merge(Competition.order(date: :desc))
+  scope :placed, -> { where.not(place: nil) }
+  scope :placed_in, ->(context) {
+    placed.where(place_context: context)
   }
 
   before_validation do

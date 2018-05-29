@@ -1,5 +1,9 @@
 class CompetitionsController < ApplicationController
-  before_action :require_user!
+  before_action :require_user!, except: [:index]
+
+  def index
+    @competitions = Competition.order(date: :desc)
+  end
 
   def new
     @competition = Competition.new
