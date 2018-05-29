@@ -4,7 +4,7 @@
       <td>Brewer</td>
       <td>Style</td>
       <td>Score</td>
-      <td>Comp</td>
+      <td>Competition</td>
       <td>Place</td>
       <td>Links</td>
     </tr>
@@ -26,7 +26,9 @@
         </td>
 
         <td>
-          <%= trophy.competition_name %>
+          <%= link_to trophy.competition_url do %>
+            <%= trophy.competition_name %>
+          <% end %>
         </td>
 
         <td>
@@ -34,10 +36,6 @@
         </td>
 
         <td>
-          <%= link_to trophy.competition_url do %>
-            <%= octicon "law", height: 24 %>
-          <% end %>
-
           <% if trophy.recipe_url.present? %>
             <%= link_to trophy.recipe_url do %>
               <%= octicon "file", height: 24 %>
