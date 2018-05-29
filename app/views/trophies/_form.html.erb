@@ -14,7 +14,7 @@
   <%= f.form_group :subcategory_id do %>
     <dt><%= f.label(:subcategory_id) %></dt>
     <dd>
-      <%= f.collection_select :subcategory_id, Subcategory.all, :id, :description, {}, { class: "form-select" } %>
+      <%= f.collection_select :subcategory_id, Subcategory.sorted, :id, :description, {}, { class: "form-select" } %>
     </dd>
   <% end %>
 
