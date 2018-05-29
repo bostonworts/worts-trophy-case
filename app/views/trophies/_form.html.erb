@@ -28,7 +28,7 @@
   <%= f.form_group :place do %>
     <dt><%= f.label(:place) %></dt>
     <dd>
-      <%= f.collection_select :place, 1..4, :itself, :ordinalize, { include_blank: "Didn't place" }, { class: "form-select" } %>
+      <%= f.collection_select :place, Place.all, :value, :description, { include_blank: "Didn't place" }, { class: "form-select" } %>
       in
       <%= f.collection_select :place_context, Trophy::PLACE_CONTEXTS, :itself, :titleize, { include_blank: "Didn't place" }, { class: "form-select" } %>
     </dd>
