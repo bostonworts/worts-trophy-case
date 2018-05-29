@@ -28,6 +28,18 @@ namespace :bjcp do
       end
     end
 
+    # Add custom categories
+    [
+      { bjcp_id: "35", subcat_id: "35A", name: "New England IPA (Custom Style)" },
+      { bjcp_id: "36", subcat_id: "36A", name: "Double New England IPA (Custom Style)"},
+    ].each do |custom_style|
+      cat = Category.find_or_create_by!(custom_style.slice(:bjcp_id, :name).merge(year: 2015))
+      Subcategory.find_or_create_by!(custom_style.slice(:name).merge(
+        bjcp_id: custom_style[:subcat_id],
+        category: cat,
+      ))
+    end
+
     puts "#{Category.count} categories and #{Subcategory.count} subcategories imported"
   end
 end
