@@ -14,11 +14,9 @@
       <tr>
         <td><%= trophy.user.full_name %></td>
         <td>
-          <% if trophy.subcategory&.bjcp_id %>
-            <span class="Label Label--orange">
-              <%= trophy.subcategory&.bjcp_id %>
-            </span>
-          <% end %>
+          <span class="Label Label--orange tooltipped tooltipped-s" aria-label="<%= trophy.subcategory_name %>">
+            <%= trophy.subcategory_bjcp_id %>
+          </span>
         </td>
 
         <td>

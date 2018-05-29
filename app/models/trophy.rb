@@ -5,6 +5,7 @@ class Trophy < ApplicationRecord
   belongs_to :subcategory
   belongs_to :user
   delegate :name, :url, to: :competition, prefix: true
+  delegate :bjcp_id, :name, to: :subcategory, prefix: true
   has_one_attached :photo
 
   validates :bjcp_score, numericality: { greater_than: 0, less_than: 51 }
