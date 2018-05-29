@@ -5,6 +5,7 @@ class CompetitionType
     mcab_finals
     nhc_qualifier
     nhc_finals
+    other
   ).freeze.map(&:freeze)
 
   def self.all
@@ -20,7 +21,12 @@ class CompetitionType
   end
 
   def description
-    acronym, rest = key.titleize.split(" ")
-    "#{acronym.upcase} #{rest}"
+    first, rest = key.titleize.split(" ")
+
+    if rest.present?
+      "#{first.upcase} #{rest}"
+    else
+      first
+    end
   end
 end
