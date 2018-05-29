@@ -6,7 +6,7 @@ class WortMembersUpdater
       subscribed_emails.each do |subscribed_email|
         User.find_or_create_by!(email: subscribed_email) do |user|
           user.admin = false
-          user.full_name = "Worts Member"
+          user.full_name = User::DEFAULT_NAME
           created_count += 1
         end
       end

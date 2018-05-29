@@ -1,6 +1,7 @@
 class ApplicationController < ActionController::Base
   include Passwordless::ControllerHelpers
 
+  before_action :show_default_name_notice
   helper_method :current_user
 
   private
@@ -21,6 +22,12 @@ class ApplicationController < ActionController::Base
       redirect_to users.sign_in_path, flash: {
         error: "Hi! You must log in as a Boston Worts member to do this."
       }
+    end
+  end
+
+  def show_default_name_notice
+    if current_user&.has_default_name?
+      flash.now[:notice] = "Please update your name by <a href='#{edit_my_profile_path}'>editing your profile</a>"
     end
   end
 end
