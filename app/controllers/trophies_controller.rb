@@ -2,8 +2,12 @@ class TrophiesController < ApplicationController
   before_action :require_user!, except: [:index]
 
   def index
-    @year = params.fetch(:year, Date.today.year).to_i
-    @trophies = Trophy.in_year(@year).date_descending
+    @season = if params[:season]
+                Season.from_param(params.fetch(:season))
+              else
+                Season.current
+              end
+    @trophies = Trophy.in_season(@season).date_descending
   end
 
   def new

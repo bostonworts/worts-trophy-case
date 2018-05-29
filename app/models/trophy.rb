@@ -5,6 +5,7 @@ class Trophy < ApplicationRecord
   belongs_to :subcategory
   belongs_to :user
   delegate :name, :url, to: :competition, prefix: true
+  delegate :season, to: :competition
   delegate :bjcp_id, :name, to: :subcategory, prefix: true
   has_one_attached :photo
 
@@ -16,8 +17,8 @@ class Trophy < ApplicationRecord
   validates :place, presence: true, if: -> { place_context.present? }
   validates :place_context, presence: true, if: -> { place.present? }
 
-  scope :in_year, ->(year) {
-    joins(:competition).merge(Competition.in_year(year))
+  scope :in_season, ->(season) {
+    joins(:competition).merge(Competition.in_season(season))
   }
   scope :date_descending, -> {
     joins(:competition).merge(Competition.order(date: :desc))

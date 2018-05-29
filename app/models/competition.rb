@@ -4,17 +4,21 @@ class Competition < ApplicationRecord
   validates :url, presence: true
   validates :competition_type, inclusion: { in: CompetitionType::TYPES }
 
-  scope :in_year, ->(year) {
-    where("EXTRACT(YEAR from date) = ?", year)
+  scope :in_season, ->(season) {
+    where(date: season.date_range)
   }
 
-  def self.years_descending
-    pluck(
-      Arel.sql("DISTINCT extract(year from date)")
-    ).map(&:to_i).sort.reverse
+  def self.seasons_descending
+    pluck(:date).map do |date|
+      Season.for_date(date)
+    end.uniq.sort.reverse
   end
 
   def description
     "#{date.year}: #{name}"
+  end
+
+  def season
+    Season.for_date(date)
   end
 end

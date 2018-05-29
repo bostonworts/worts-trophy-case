@@ -1,8 +1,8 @@
 <div class="tabnav">
   <nav class="tabnav-tabs">
-    <% Competition.years_descending.each do |year| %>
-      <% selected_tab_class = @year == year ? " selected" : "" %>
-      <%= link_to year, trophies_by_year_path(year), class: "tabnav-tab#{selected_tab_class}" %>
+    <% Competition.seasons_descending.each do |season| %>
+      <% selected_tab_class = @season == season ? " selected" : "" %>
+      <%= link_to season.description, trophies_by_season_path(season.to_param), class: "tabnav-tab#{selected_tab_class}" %>
     <% end %>
   </nav>
 </div>
