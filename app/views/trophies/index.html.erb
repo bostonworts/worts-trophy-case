@@ -4,7 +4,7 @@
       <td>Brewer</td>
       <td>Style</td>
       <td>Score</td>
-      <td>Date</td>
+      <td>Comp</td>
       <td>Place</td>
       <td>Links</td>
     </tr>
@@ -26,7 +26,7 @@
         </td>
 
         <td>
-          <%# <%= l trophy.competition_date, format: :short %>
+          <%= trophy.competition.description %>
         </td>
 
         <td>
@@ -34,9 +34,9 @@
         </td>
 
         <td>
-          <%# <%= link_to trophy.competition_url do %>
-          <%#   <%= octicon "law", height: 24 %>
-          <%# <% end %>
+          <%= link_to trophy.competition_url do %>
+            <%= octicon "law", height: 24 %>
+          <% end %>
 
           <% if trophy.recipe_url.present? %>
             <%= link_to trophy.recipe_url do %>
