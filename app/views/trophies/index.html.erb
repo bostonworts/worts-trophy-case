@@ -1,3 +1,12 @@
+<div class="tabnav">
+  <nav class="tabnav-tabs">
+    <% Competition.years_descending.each do |year| %>
+      <% selected_tab_class = @year == year ? " selected" : "" %>
+      <%= link_to year, trophies_by_year_path(year), class: "tabnav-tab#{selected_tab_class}" %>
+    <% end %>
+  </nav>
+</div>
+
 <table class="trophies-table width-full">
   <thead>
     <tr class="bg-gray">
@@ -11,10 +20,10 @@
   </thead>
   <tbody>
     <% @trophies.each do |trophy| %>
-      <tr>
+      <tr id="trophy-<%= trophy.id %>">
         <td><%= trophy.user.full_name %></td>
         <td>
-          <span class="Label Label--orange tooltipped tooltipped-s" aria-label="<%= trophy.subcategory_name %>">
+          <span class="Label Label--orange tooltipped tooltipped-e" aria-label="<%= trophy.subcategory_name %>">
             <%= trophy.subcategory_bjcp_id %>
           </span>
         </td>

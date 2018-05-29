@@ -16,6 +16,13 @@ class Trophy < ApplicationRecord
   validates :place, presence: true, if: -> { place_context.present? }
   validates :place_context, presence: true, if: -> { place.present? }
 
+  scope :in_year, ->(year) {
+    joins(:competition).merge(Competition.in_year(year))
+  }
+  scope :date_descending, -> {
+    joins(:competition).merge(Competition.order(date: :desc))
+  }
+
   before_validation do
     # Don't allow blank string for place_context
     self.place_context = place_context.presence
