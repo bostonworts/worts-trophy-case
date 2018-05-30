@@ -7,6 +7,12 @@
           :
           <%= competition.name %>
         <% end %>
+
+        <% if competition.high_profile? %>
+          <span class="Label Label--outline Label--outline-green float-right">
+            <%= competition.competition_type.gsub("_", " ") %>
+          </span>
+        <% end %>
       </h3>
     </div>
     <ul>

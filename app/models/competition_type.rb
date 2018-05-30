@@ -14,6 +14,15 @@ class CompetitionType
     end
   end
 
+  def self.high_profile?(type)
+    type.in? %w(
+      mcab_qualifier
+      mcab_finals
+      nhc_qualifier
+      nhc_finals
+    )
+  end
+
   attr_reader :key
 
   def initialize(key)

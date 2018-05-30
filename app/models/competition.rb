@@ -16,6 +16,10 @@ class Competition < ApplicationRecord
     end.uniq.sort.reverse
   end
 
+  def high_profile?
+    CompetitionType.high_profile?(competition_type)
+  end
+
   def medal_counts(context)
     trophies.placed_in(context).group(:place).order(:place).count.map do |place, count|
       [Medal.new(place, context), count]
