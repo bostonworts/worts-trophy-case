@@ -16,3 +16,25 @@
   display: inline-block;
   width: 200px;
 }
+
+.medals-container {
+  border-top: 1px solid $border-gray-light;
+
+  ul {
+    display: table;
+    width: 100%;
+
+    li {
+      border-left: 1px solid #e1e4e8;
+      display: block;
+      float: left;
+      width: 50%;
+      padding-bottom: 10px;
+      text-align: center;
+
+      &:first-child {
+        border-left: 0;
+      }
+    }
+  }
+}

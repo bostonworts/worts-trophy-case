@@ -15,16 +15,26 @@
         <% end %>
       </h3>
     </div>
-    <ul>
-      <% %w(best_of_show category).each do |context| %>
-        <% if competition.trophies.placed_in(context).any? %>
-          <li class="Box-row">
-            <span class="category-awards-label"><%= context.titleize %> Awards:</span>
 
-            <%= render "medals", competition: competition, context: context %>
-          </li>
+    <div class="medals-container">
+      <ul>
+        <% %w(best_of_show category).each do |context| %>
+          <% medals = competition.trophies.placed_in(context) %>
+          <% if medals.any? %>
+            <li class="p-2">
+              <div>
+                <%= render "medals", competition: competition, context: context %>
+              </div>
+
+              <span class="category-awards-label">
+                <%= medals.count %>
+                <%= context.titleize %>
+                <%= "Award".pluralize(medals.count) %>
+              </span>
+            </li>
+          <% end %>
         <% end %>
-      <% end %>
-    </ul>
+      </ul>
+    </div>
   </div>
 <% end %>
