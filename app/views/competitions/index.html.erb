@@ -19,17 +19,20 @@
     <div class="medals-container">
       <ul>
         <% %w(best_of_show category).each do |context| %>
-          <% medals = competition.trophies.placed_in(context) %>
-          <% if medals.any? %>
+          <% trophies = competition.trophies.placed_in(context) %>
+          <% if trophies.any? %>
             <li class="p-2">
               <div>
                 <%= render "medals", competition: competition, context: context %>
               </div>
 
               <span class="category-awards-label">
-                <%= medals.count %>
+                <%= trophies.count %>
                 <%= context.titleize %>
-                <%= "Award".pluralize(medals.count) %>
+                <%= "Award".pluralize(trophies.count) %>
+                by
+                <%= worts_count = trophies.count("DISTINCT user_id") %>
+                <%= "Wort".pluralize(worts_count) %>
               </span>
             </li>
           <% end %>
