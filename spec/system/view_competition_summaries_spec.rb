@@ -10,8 +10,10 @@ describe "Competition summary" do
 
     visit "/competitions"
 
-    expect(page).to have_content "Category Awards: 🥇🥇🥈🥈🥈"
-    expect(page).to have_content "Best Of Show Awards: 🏆🏆"
+    expect(page).to have_content "5 Category Awards by 5 Worts"
+    expect(page).to have_content "🥇🥇🥈🥈🥈"
+    expect(page).to have_content "2 Best Of Show Awards by 2 Worts"
+    expect(page).to have_content "🏆🏆"
 
     click_link "🥇🥇🥈🥈🥈"
 
