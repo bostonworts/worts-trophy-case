@@ -1,6 +1,7 @@
 class User < ApplicationRecord
   DEFAULT_NAME = "Worts Member".freeze
 
+  has_many :trophies
   validates :email, presence: true, uniqueness: { case_sensitive: false }
   validates :full_name, presence: true, uniqueness: { unless: :has_default_name? }
 

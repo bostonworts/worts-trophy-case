@@ -8,4 +8,6 @@ Rails.application.routes.draw do
 
   get "/trophies/:season", season: /\d{4}-\d{4}/, to: "trophies#index", as: :trophies_by_season
   resources :trophies
+
+  get "/leaderboard(/:season)", season: /\d{4}-\d{4}/, to: "leaderboard#show", as: :leaderboard
 end

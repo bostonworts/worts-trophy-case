@@ -1,0 +1,15 @@
+<table>
+  <thead>
+    <tr>
+      <td>Brewer Name</td>
+    </tr>
+  </thead>
+
+  <tbody>
+    <% @leaderboard.results.each do |result| %>
+      <%= content_tag(:tr, id: "user-#{result.user_id}") do %>
+        <%= content_tag(:td, result.brewer_name) %>
+      <% end %>
+    <% end %>
+  </tbody>
+</table>

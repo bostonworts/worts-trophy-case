@@ -15,6 +15,11 @@ FactoryBot.define do
           place_context context
         end
       end
+
+      trait :"#{context}_hm" do
+        place 4
+        place_context context
+      end
     end
   end
 end

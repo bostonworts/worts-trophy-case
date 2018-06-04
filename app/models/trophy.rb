@@ -33,9 +33,36 @@ class Trophy < ApplicationRecord
     self.place_context = place_context.presence
   end
 
+  def leaderboard_score
+    if place
+      bos_multiplier = placed_in_best_of_show? ? 2 : 1
+      competition_bonus = competition.high_profile? ? 0.5 : 0
+      base_leaderboard_score * bos_multiplier + competition_bonus
+    else
+      0
+    end
+  end
+
   def place_description
     if place
       "#{place.ordinalize} in #{place_context.titleize}"
     end
+  end
+
+  private
+
+  def base_leaderboard_score
+    case place
+    when 1 then 3
+    when 2 then 2
+    when 3 then 1
+    when 4 then 0.5
+    else
+      fail "Unexpected place #{place}"
+    end
+  end
+
+  def placed_in_best_of_show?
+    place_context == "best_of_show"
   end
 end

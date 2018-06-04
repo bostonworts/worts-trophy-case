@@ -4,5 +4,9 @@ FactoryBot.define do
     date { Date.today }
     name "MyString"
     url "MyString"
+
+    trait :high_profile do
+      competition_type "nhc_finals"
+    end
   end
 end
