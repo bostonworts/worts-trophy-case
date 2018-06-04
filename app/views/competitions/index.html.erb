@@ -1,5 +1,7 @@
+<%= content_tag(:a, "Add Competition", class: "btn btn-primary mb-3", href: "/competitions/new") %>
+
 <% @competitions.each do |competition| %>
-  <div class="Box my-3">
+  <div class="Box mb-3">
     <div class="Box-header">
       <h3 class="Box-title">
         <%= link_to trophies_by_season_path(competition.season, competition_id: competition) do %>

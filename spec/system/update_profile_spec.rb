@@ -12,6 +12,7 @@ describe "updating your profile" do
 
     expect(page).to have_content "Profile updated"
 
+    click_link "Trophies"
     click_on "Add Trophy"
     expect(page).to have_content "Add a trophy for Ian Anderson"
   end

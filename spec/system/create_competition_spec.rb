@@ -5,6 +5,7 @@ describe "Creating a competition" do
     worts_member = create(:user)
     login_as(worts_member)
 
+    click_link "Competitions"
     click_link "Add Competition"
 
     fill_in :competition_name, with: "Boss Hop"
@@ -18,7 +19,8 @@ describe "Creating a competition" do
 
     expect(page).to have_content "Competition successfully created"
 
-    click_link "Add Trophy"
+    click_link "Trophies"
+    click_on "Add Trophy"
     expect(page).to have_select :trophy_competition_id, options: ["2018: Boss Hop"]
   end
 end

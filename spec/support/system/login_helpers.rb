@@ -2,7 +2,8 @@ module System
   def login_as(user)
     visit "/"
 
-    click_link "Add Trophy"
+    click_link "Trophies"
+    click_on "Add Trophy"
 
     # Submit login form with email address in worts list
     expect(current_path).to eq("/users/sign_in")
@@ -20,6 +21,7 @@ module System
 
     # It redirects to root in test because the session is cleared out
     # In development, it redirects you back to where you wanted to go initially
-    click_link "Add Trophy"
+    click_link "Trophies"
+    click_on "Add Trophy"
   end
 end

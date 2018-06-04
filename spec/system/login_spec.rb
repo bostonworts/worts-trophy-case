@@ -4,7 +4,8 @@ describe "logging in" do
   it "doesn't email a magic link to non-worts member" do
     visit "/"
 
-    click_link "Add Trophy"
+    click_link "Trophies"
+    click_on "Add Trophy"
 
     # Submit login form with email address in worts list
     expect(current_path).to eq("/users/sign_in")
