@@ -1,5 +1,15 @@
 <h3>Leaderboard for <%= @season.description %> season</h3>
-<h4>Ends on <%= @season.end_date %></h4>
+<p>Ends on <%= @season.end_date %></p>
+
+<h4>Scoring rules:</h4>
+<ul class="pl-6">
+  <li>3 points for first place</li>
+  <li>2 points for second place</li>
+  <li>1 points for third place</li>
+  <li>0.5 points for honorable mention</li>
+  <li>x2 multiplier for Best of Show place</li>
+  <li>0.5 point bonus for high profile competitions</li>
+</ul>
 
 <table class="data-table">
   <thead>
