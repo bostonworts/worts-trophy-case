@@ -39,6 +39,10 @@ class Season < Struct.new(:start_year, :end_year)
     "#{start_year}-#{end_year}"
   end
 
+  def end_date
+    date_range.last
+  end
+
   def to_param
     description
   end

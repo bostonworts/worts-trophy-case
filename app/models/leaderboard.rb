@@ -1,6 +1,6 @@
 class Leaderboard
   def results
-    User.all.map do |user|
+    User.with_trophies.map do |user|
       Result.new(user)
     end.sort.reverse
   end

@@ -1,7 +1,11 @@
-<table>
+<h3>Leaderboard for <%= @season.description %> season</h3>
+<h4>Ends on <%= @season.end_date %></h4>
+
+<table class="data-table">
   <thead>
-    <tr>
+    <tr class="bg-gray">
       <td>Brewer Name</td>
+      <td>Season Score</td>
     </tr>
   </thead>
 
@@ -9,6 +13,7 @@
     <% @leaderboard.results.each do |result| %>
       <%= content_tag(:tr, id: "user-#{result.user_id}") do %>
         <%= content_tag(:td, result.brewer_name) %>
+        <%= content_tag(:td, result.score) %>
       <% end %>
     <% end %>
   </tbody>

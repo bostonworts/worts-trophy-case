@@ -5,6 +5,8 @@ class User < ApplicationRecord
   validates :email, presence: true, uniqueness: { case_sensitive: false }
   validates :full_name, presence: true, uniqueness: { unless: :has_default_name? }
 
+  scope :with_trophies, -> { joins(:trophies).distinct }
+
   passwordless_with :email
 
   def can_delete?(trophy)

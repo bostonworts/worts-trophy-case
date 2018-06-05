@@ -1,10 +1,10 @@
-.trophies-table {
+.data-table {
   thead {
     font-weight: bold;
   }
 
   td {
-    border: 1px solid;
+    border: 1px solid $border-gray;
     padding: 10px;
     text-align: center;
   }

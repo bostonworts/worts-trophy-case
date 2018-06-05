@@ -13,7 +13,7 @@
   <%= select_tag :competition_id, options_from_collection_for_select(@competitions_in_season, :id, :name, params[:competition_id]), class: "form-select", onchange: "this.form.submit()", prompt: "All Competitions" %>
 <% end %>
 
-<table class="trophies-table width-full">
+<table class="data-table width-full">
   <thead>
     <tr class="bg-gray">
       <td>Brewer</td>
