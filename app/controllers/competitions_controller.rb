@@ -2,7 +2,7 @@ class CompetitionsController < ApplicationController
   before_action :require_user!, except: [:index]
 
   def index
-    @competitions = Competition.order(date: :desc)
+    @competitions = Competition.reverse_chronological
   end
 
   def new

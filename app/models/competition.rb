@@ -9,6 +9,9 @@ class Competition < ApplicationRecord
   scope :in_season, ->(season) {
     where(date: season.date_range)
   }
+  scope :reverse_chronological, -> {
+    order(date: :desc)
+  }
 
   def self.seasons_descending
     pluck(:date).map do |date|
