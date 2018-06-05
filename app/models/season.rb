@@ -32,7 +32,7 @@ class Season < Struct.new(:start_year, :end_year)
   end
 
   def date_range
-    start_date(start_year)...start_date(end_year)
+    calculate_start_date(start_year)...calculate_start_date(end_year)
   end
 
   def description
@@ -40,7 +40,11 @@ class Season < Struct.new(:start_year, :end_year)
   end
 
   def end_date
-    date_range.last
+    date_range.reverse_each.first
+  end
+
+  def start_date
+    date_range.first
   end
 
   def to_param
@@ -49,7 +53,7 @@ class Season < Struct.new(:start_year, :end_year)
 
   private
 
-  def start_date(year)
+  def calculate_start_date(year)
     Date.new(year, STARTING_MONTH, STARTING_DAY)
   end
 end

@@ -1,5 +1,10 @@
-<h3>Leaderboard for <%= @season.description %> season</h3>
-<p>Ends on <%= @season.end_date %></p>
+
+<div class="Subhead">
+  <div class="Subhead-heading">Leaderboard for <%= @season.description %> season</div>
+  <div class="Subhead-description">
+    Starts <%= l @season.start_date, format: :date %>, ends <%= l @season.end_date, format: :date %>
+  </div>
+</div>
 
 <h4>Scoring rules:</h4>
 <ul class="pl-6">

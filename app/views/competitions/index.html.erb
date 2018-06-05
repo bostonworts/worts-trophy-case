@@ -1,4 +1,9 @@
-<%= content_tag(:a, "Add Competition", class: "btn btn-primary mb-3", href: "/competitions/new") %>
+<div class="Subhead">
+  <div class="Subhead-heading">Competitions</div>
+  <div class="Subhead-actions">
+    <%= content_tag(:a, "Add Competition", class: "btn btn-primary", href: "/competitions/new") %>
+  </div>
+</div>
 
 <% @competitions.each do |competition| %>
   <div class="Box mb-3">

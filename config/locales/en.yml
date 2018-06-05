@@ -14,6 +14,8 @@ en:
         "%m/%d/%Y"
       with_weekday:
         "%a %m/%d/%y"
+      date:
+        "%b %-d, %Y"
 
   helpers:
     label:

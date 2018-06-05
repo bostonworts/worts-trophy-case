@@ -1,3 +1,7 @@
+<div class="Subhead">
+  <div class="Subhead-heading">My Profile</div>
+</div>
+
 <%= form_for @user, url: my_profile_path, builder: FormGroupBuilder do |f| %>
   <%= f.form_group :full_name do %>
     <dt><%= f.label(:full_name) %></dt>
