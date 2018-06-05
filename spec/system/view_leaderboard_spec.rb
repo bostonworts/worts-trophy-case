@@ -10,7 +10,8 @@ describe "Leaderboard" do
     create(:trophy, :category_1st, user: last_wort)              # 3 points
     create_list(:trophy, 2, :best_of_show_2nd, user: first_wort) # 12 points
 
-    visit "/leaderboard"
+    visit "/"
+    click_link "Leaderboard"
 
     [first_wort, middle_wort, last_wort].each.with_index(1) do |wort, row_num|
       expect(page).to have_leaderboard_row(wort, row_number: row_num)
