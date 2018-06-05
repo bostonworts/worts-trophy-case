@@ -22,7 +22,10 @@
   <tbody>
     <% @leaderboard.results.each do |result| %>
       <%= content_tag(:tr, id: "user-#{result.user_id}") do %>
-        <%= content_tag(:td, result.brewer_name) %>
+        <%= content_tag(:td) do %>
+          <%= link_to result.brewer_name, trophies_path(user_id: result.user_id) %>
+        <% end %>
+
         <%= content_tag(:td, result.score) %>
       <% end %>
     <% end %>

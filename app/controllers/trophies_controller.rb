@@ -7,9 +7,12 @@ class TrophiesController < ApplicationController
               else
                 Season.current
               end
+    @user_id = params[:user_id]
+    @users = User.named.order(:full_name)
 
     @competitions_in_season = Competition.in_season(@season).order(:name)
     @trophies = Trophy.in_season(@season).date_descending
+    @trophies = @trophies.where(user_id: @user_id) if @user_id.present?
 
     if competition_id = params[:competition_id].presence
       @trophies = @trophies.where(competition_id: competition_id)

@@ -5,6 +5,7 @@ class User < ApplicationRecord
   validates :email, presence: true, uniqueness: { case_sensitive: false }
   validates :full_name, presence: true, uniqueness: { unless: :has_default_name? }
 
+  scope :named, -> { where.not(full_name: DEFAULT_NAME) }
   scope :with_trophies, ->(season) do
     joins(:trophies).merge(Trophy.in_season(season)).distinct
   end
