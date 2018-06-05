@@ -22,67 +22,11 @@
   <%= select_tag :user_id, options_from_collection_for_select(@users, :id, :full_name, @user_id), class: "form-select", onchange: "this.form.submit()", prompt: "All Worts" %>
 <% end %>
 
-<table class="data-table width-full">
-  <thead>
-    <tr class="bg-gray">
-      <td>Brewer</td>
-      <td>Style</td>
-      <td>Score</td>
-      <td>Competition</td>
-      <td>Place</td>
-      <td>Links</td>
-    </tr>
-  </thead>
-  <tbody>
-    <% @trophies.each do |trophy| %>
-      <tr id="trophy-<%= trophy.id %>">
-        <td><%= trophy.user.full_name %></td>
-        <td>
-          <span class="Label Label--orange tooltipped tooltipped-e" aria-label="<%= trophy.subcategory_name %>">
-            <%= trophy.subcategory_bjcp_id %>
-          </span>
-        </td>
-
-        <td>
-          <span class="Counter"><%= trophy.bjcp_score %></span>
-        </td>
-
-        <td>
-          <%= link_to trophy.competition_url do %>
-            <%= trophy.competition_name %>
-          <% end %>
-        </td>
-
-        <td>
-          <%= trophy.place_description %>
-        </td>
-
-        <td>
-          <% if trophy.recipe_url.present? %>
-            <%= link_to trophy.recipe_url do %>
-              <%= octicon "file", height: 24 %>
-            <% end %>
-          <% end %>
-
-          <% if trophy.photo.attached? %>
-            <%= link_to url_for(trophy.photo) do %>
-              <%= octicon "file-media", height: 24 %>
-            <% end %>
-          <% end %>
-
-          <% if current_user&.can_edit?(trophy) %>
-            <%= link_to edit_trophy_path(trophy), "aria-label": "Edit Trophy" do %>
-              <%= octicon "pencil", height: 24 %>
-            <% end %>
-          <% end %>
-
-          <% if current_user&.can_delete?(trophy) %>
-            <%= link_to trophy_path(trophy), "aria-label": "Delete Trophy", method: :delete, data: { confirm: "Are you sure you want to delete this trophy?" } do %>
-              <%= octicon "trashcan", height: 24 %>
-            <% end %>
-          <% end %>
-        </td>
-      </tr>
-    <% end %>
-  </tbody>
-</table>
+<% if @trophies.any? %>
+  <%= render "table", trophies: @trophies %>
+<% else %>
+  <div class="blankslate">
+    <h3>No trophies yet</h3>
+    <p>But we're on it</p>
+  </div>
+<% end %>
