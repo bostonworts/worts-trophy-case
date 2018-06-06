@@ -17,7 +17,7 @@ class LeaderboardResult
   end
 
   def score
-    user.trophies.in_season(season).sum(&:leaderboard_score)
+    user.trophies.in_season(season).includes(:competition).sum(&:leaderboard_score)
   end
 
   private
