@@ -12,7 +12,9 @@
   <tbody>
     <% @trophies.each do |trophy| %>
       <tr id="trophy-<%= trophy.id %>">
-        <td><%= trophy.user.full_name %></td>
+        <td>
+          <%= link_to trophy.user.full_name, trophies_path(user_id: trophy.user.id) %>
+        </td>
         <td>
           <span class="Label Label--orange tooltipped tooltipped-e" aria-label="<%= trophy.subcategory_name %>">
             <%= trophy.subcategory_bjcp_id %>
