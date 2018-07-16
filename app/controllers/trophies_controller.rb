@@ -11,6 +11,7 @@ class TrophiesController < ApplicationController
     @users = User.named.order(:full_name)
 
     @competitions_in_season = Competition.in_season(@season).order(:name)
+    @subcategories_in_season = Subcategory.has_trophies_in_season(@season).sorted
     @trophies = Trophy.in_season(@season).includes(
       :competition,
       :subcategory,
@@ -21,6 +22,10 @@ class TrophiesController < ApplicationController
 
     if competition_id = params[:competition_id].presence
       @trophies = @trophies.where(competition_id: competition_id)
+    end
+
+    if @subcategory_id = params[:subcategory_id].presence
+      @trophies = @trophies.where(subcategory_id: @subcategory_id)
     end
   end
 

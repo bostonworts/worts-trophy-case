@@ -22,6 +22,10 @@
   <%= select_tag :user_id, options_from_collection_for_select(@users, :id, :full_name, @user_id), class: "form-select", onchange: "this.form.submit()", prompt: "All Worts" %>
 <% end %>
 
+<%= form_tag nil, method: :get, class: "mb-4" do %>
+  <%= select_tag :subcategory_id, options_from_collection_for_select(@subcategories_in_season, :id, :description, @subcategory_id), class: "form-select", onchange: "this.form.submit()", prompt: "All Categories" %>
+<% end %>
+
 <% if @trophies.any? %>
   <%= render "table", trophies: @trophies %>
 <% else %>
