@@ -10,7 +10,7 @@ describe "editing a trophy" do
     click_link "Trophies"
     click_link "Edit Trophy"
 
-    select 33, from: :trophy_bjcp_score
+    fill_in :trophy_bjcp_score, with: 33
     click_on "Update Trophy"
 
     expect(page).to have_content("Trophy successfully updated")

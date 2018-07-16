@@ -21,7 +21,7 @@
   <%= f.form_group :bjcp_score do %>
     <dt><%= f.label(:bjcp_score) %></dt>
     <dd>
-      <%= f.collection_select :bjcp_score, 1..50, :itself, :itself, {}, { class: "form-select" } %>
+      <%= f.number_field :bjcp_score, class: "form-control", in: 1..50, step: 1, placeholder: "1-50" %>
     </dd>
   <% end %>
 

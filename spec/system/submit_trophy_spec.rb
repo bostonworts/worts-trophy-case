@@ -50,7 +50,7 @@ describe "submit trophy" do
 
   def fill_required_fields(competition:)
     select "3B - Czech Premium Pale Lager", from: :trophy_subcategory_id
-    select 25, from: :trophy_bjcp_score
+    fill_in :trophy_bjcp_score, with: 25
     select competition.description, from: :trophy_competition_id
   end
 end
