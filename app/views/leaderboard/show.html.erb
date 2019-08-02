@@ -3,6 +3,7 @@
   <div class="Subhead-heading">Leaderboard for <%= @season.description %> season</div>
   <div class="Subhead-description">
     Starts <%= l @season.start_date, format: :date %>, ends <%= l @season.end_date, format: :date %>
+    <%= link_to "View leaderboard for #{@season.previous.description} season", leaderboard_path(@season.previous) %>
   </div>
 </div>
 

@@ -10,4 +10,12 @@ describe Season do
       expect(Season.for_date(Date.parse("2018-07-19"))).to eq Season.new(2018, 2019)
     end
   end
+
+  describe "#previous" do
+    it "returns the previous season" do
+      current_season = Season.new(2019, 2020)
+
+      expect(current_season.previous).to eq Season.new(2018, 2019)
+    end
+  end
 end

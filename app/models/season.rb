@@ -51,6 +51,22 @@ class Season < Struct.new(:start_year, :end_year)
     description
   end
 
+  def previous
+    Season.new(start_year - 1, end_year - 1)
+  end
+
+  def next
+    if current?
+      nil
+    else
+      Season.new(start_year + 1, end_year + 1)
+    end
+  end
+
+  def current?
+    self == self.class.current
+  end
+
   private
 
   def calculate_start_date(year)
