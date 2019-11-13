@@ -31,6 +31,7 @@ jobs:
         RAILS_ENV: test
       run: |
         gem install bundler
+        cp .sample.env .env
         bundle install
         bin/rails dev:prime
         npm install
