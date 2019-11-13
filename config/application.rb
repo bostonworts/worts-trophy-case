@@ -10,6 +10,9 @@ require "action_view/railtie"
 require "action_cable/engine"
 require "sprockets/railtie"
 Bundler.require(*Rails.groups)
+
+Dotenv::Railtie.load
+
 module WortsTrophyCase
   class Application < Rails::Application
     config.assets.quiet = true
