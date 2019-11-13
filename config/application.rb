@@ -26,7 +26,7 @@ module WortsTrophyCase
     config.load_defaults 5.2
     config.generators.system_tests = nil
     config.action_mailer.default_options = {
-      from: "noreply@#{ENV.fetch("APPLICATION_HOST")}"
+      from: "noreply@#{ENV.fetch("APPLICATION_HOST", "example.com")}"
     }
   end
 end
