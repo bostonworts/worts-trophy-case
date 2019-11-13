@@ -33,4 +33,5 @@ jobs:
         gem install bundler
         bundle install
         bin/rails dev:prime
+        npm install
         bundle exec rspec
