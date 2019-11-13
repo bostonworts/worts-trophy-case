@@ -25,6 +25,10 @@ jobs:
         sudo apt-get -yqq install libpq-dev
 
     - name: Build and test with RSpec
+      env:
+        PGHOST: localhost
+        PGUSER: postgres
+        RAILS_ENV: test
       run: |
         bin/setup
         bundle exec rspec
