@@ -28,6 +28,8 @@ if [ ! -d .git/safe ] && echo $PATH | grep .git/safe > /dev/null; then
   echo
 fi
 
+npm install
+
 # Only if this isn't CI
 # if [ -z "$CI" ]; then
 # fi
