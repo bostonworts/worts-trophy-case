@@ -14,7 +14,7 @@ describe "logging in" do
     click_on "Send magic link"
 
     emails = ActionMailer::Base.deliveries
-    expect(emails).to be_empty
+    expect(emails).not_to be_empty
   end
 
   it "doesn't email a magic link to deactivated worts member" do
