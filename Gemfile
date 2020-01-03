@@ -22,7 +22,7 @@ gem "sprockets", ">= 3.0.0"
 gem "title"
 gem "uglifier"
 gem "bootsnap", require: false
-gem "google_drive"
+gem "google_drive", ">= 3.0.0"
 
 
 group :development do
