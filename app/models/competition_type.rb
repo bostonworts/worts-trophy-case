@@ -5,6 +5,7 @@ class CompetitionType
     mcab_finals
     nhc_qualifier
     nhc_finals
+    club_only
     other
   ).freeze.map(&:freeze)
 
@@ -12,6 +13,10 @@ class CompetitionType
     TYPES.map do |key|
       new(key)
     end
+  end
+
+  def self.gives_leaderboard_points?(type)
+    type != "club_only"
   end
 
   def self.high_profile?(type)

@@ -22,4 +22,16 @@ describe Competition do
       expect(Competition.seasons_descending.map(&:description)).to eq(["2017-2018", "2016-2017", "2015-2016"])
     end
   end
+
+  describe "#gives_leaderboard_points?" do
+    it "returns false if competition_type doesn't give leaderboard points" do
+      competition = build(:competition, competition_type: "club_only")
+      expect(competition.gives_leaderboard_points?).to eq(false)
+    end
+
+    it "returns true if competition_type gives leaderboard points" do
+      competition = build(:competition, competition_type: "bjcp_sanctioned")
+      expect(competition.gives_leaderboard_points?).to eq(true)
+    end
+  end
 end
