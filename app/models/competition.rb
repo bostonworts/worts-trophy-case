@@ -19,6 +19,10 @@ class Competition < ApplicationRecord
     end.uniq.sort.reverse
   end
 
+  def gives_leaderboard_points?
+    CompetitionType.gives_leaderboard_points?(competition_type)
+  end
+
   def high_profile?
     CompetitionType.high_profile?(competition_type)
   end

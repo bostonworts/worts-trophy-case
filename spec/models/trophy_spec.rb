@@ -61,5 +61,11 @@ RSpec.describe Trophy, type: :model do
       trophy = build(:trophy, :best_of_show_3rd, competition: comp)
       expect(trophy.leaderboard_score).to eq 2.5
     end
+
+    it "returns 0 if it's a club-only competition" do
+      comp = build(:competition, competition_type: "club_only")
+      trophy = build(:trophy, :best_of_show_1st, competition: comp)
+      expect(trophy.leaderboard_score).to eq 0.0
+    end
   end
 end

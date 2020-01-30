@@ -34,6 +34,8 @@ class Trophy < ApplicationRecord
   end
 
   def leaderboard_score
+    return 0 unless competition.gives_leaderboard_points?
+
     if place
       bos_multiplier = placed_in_best_of_show? ? 2 : 1
       competition_bonus = competition.high_profile? ? 0.5 : 0
