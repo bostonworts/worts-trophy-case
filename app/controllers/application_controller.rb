@@ -20,7 +20,7 @@ class ApplicationController < ActionController::Base
     else
       save_passwordless_redirect_location!(User)
       redirect_to users.sign_in_path, flash: {
-        error: "Hi! You must log in as a Boston Worts member to do this."
+        error: "Hi! You must log in as a Boston Worts member to do this. Enter your email address and we'll send you a link to log in."
       }
     end
   end
