@@ -23,6 +23,7 @@ gem "title"
 gem "uglifier"
 gem "bootsnap", require: false
 gem "google_drive", ">= 3.0.0"
+gem "ddtrace"
 
 
 group :development do
