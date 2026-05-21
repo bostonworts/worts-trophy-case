@@ -337,7 +337,7 @@ def clear_archive(
         .options(selectinload(Competition.results))
     ).all()
     for competition in competitions:
-        if not competition.results:
+        if not competition.results and not submission_exists_for_competition(db, competition.id):
             db.delete(competition)
             deleted_competitions += 1
 
@@ -349,7 +349,7 @@ def clear_archive(
         .options(selectinload(Member.results))
     ).all()
     for member in inactive_members:
-        if not member.results:
+        if not member.results and not submission_exists_for_member(db, member.id):
             db.delete(member)
             deleted_members += 1
 
@@ -541,6 +541,19 @@ def build_backup_payload(db: Session) -> dict[str, Any]:
         )
         .order_by(Result.created_at, Result.id)
     ).all()
+    submissions = db.scalars(
+        select(MemberResultSubmission)
+        .options(
+            selectinload(MemberResultSubmission.member),
+            selectinload(MemberResultSubmission.competition),
+            selectinload(MemberResultSubmission.style_subcategory).selectinload(
+                StyleSubcategory.category
+            ),
+            selectinload(MemberResultSubmission.reviewed_by),
+            selectinload(MemberResultSubmission.result),
+        )
+        .order_by(MemberResultSubmission.created_at, MemberResultSubmission.id)
+    ).all()
     app_settings = db.scalars(select(AppSetting).order_by(AppSetting.key)).all()
     audit_logs = db.scalars(
         select(AuditLog)
@@ -619,6 +632,43 @@ def build_backup_payload(db: Session) -> dict[str, Any]:
             }
             for result in results
         ],
+        "member_result_submissions": [
+            {
+                "member_email": submission.member.email,
+                "competition_name": submission.competition.name,
+                "competition_date": submission.competition.date.isoformat(),
+                "style_guide_year": submission.style_subcategory.category.guide_year,
+                "style_subcategory_code": submission.style_subcategory.code,
+                "bjcp_score": (
+                    str(submission.bjcp_score)
+                    if submission.bjcp_score is not None
+                    else None
+                ),
+                "place": submission.place,
+                "placement_scope": (
+                    submission.placement_scope.value
+                    if submission.placement_scope is not None
+                    else None
+                ),
+                "recipe_url": submission.recipe_url,
+                "recipe_file_url": submission.recipe_file_url,
+                "photo_url": submission.photo_url,
+                "notes": submission.notes,
+                "status": submission.status.value,
+                "reviewed_by_email": (
+                    submission.reviewed_by.email if submission.reviewed_by else None
+                ),
+                "reviewed_at": (
+                    submission.reviewed_at.isoformat()
+                    if submission.reviewed_at is not None
+                    else None
+                ),
+                "rejection_reason": submission.rejection_reason,
+                "created_at": submission.created_at.isoformat(),
+                "updated_at": submission.updated_at.isoformat(),
+            }
+            for submission in submissions
+        ],
         "audit_logs": [
             {
                 "created_at": audit_log.created_at.isoformat(),
@@ -647,6 +697,8 @@ def restore_backup_payload(db: Session, payload: Any) -> tuple[str, list[str]]:
         "competitions": 0,
         "results": 0,
         "skipped_results": 0,
+        "submissions": 0,
+        "skipped_submissions": 0,
         "audit_logs": 0,
     }
 
@@ -830,6 +882,25 @@ def restore_backup_payload(db: Session, payload: Any) -> tuple[str, list[str]]:
         db.add(result)
         counts["results"] += 1
 
+    db.flush()
+    seen_submission_keys: set[tuple[Any, ...]] = set()
+    for index, item in enumerate(as_list(payload.get("member_result_submissions")), start=1):
+        if not isinstance(item, dict):
+            errors.append(f"Submission {index}: row must be an object.")
+            continue
+        submission, submission_errors = restore_submission_from_payload(db, index, item)
+        if submission_errors:
+            errors.extend(submission_errors)
+            continue
+        assert submission is not None
+        key = submission_identity_key(submission)
+        if key in seen_submission_keys or submission_exists(db, key):
+            counts["skipped_submissions"] += 1
+            continue
+        seen_submission_keys.add(key)
+        db.add(submission)
+        counts["submissions"] += 1
+
     for index, item in enumerate(as_list(payload.get("audit_logs")), start=1):
         if not isinstance(item, dict):
             errors.append(f"Audit log {index}: row must be an object.")
@@ -845,11 +916,14 @@ def restore_backup_payload(db: Session, payload: Any) -> tuple[str, list[str]]:
         "Restored "
         f"{counts['members']} members, {counts['competitions']} competitions, "
         f"{counts['categories']} categories, {counts['subcategories']} subcategories, "
-        f"{counts['results']} results, {counts['settings']} settings, and "
+        f"{counts['results']} results, {counts['submissions']} submissions, "
+        f"{counts['settings']} settings, and "
         f"{counts['audit_logs']} audit entries."
     )
     if counts["skipped_results"]:
         summary += f" Skipped {counts['skipped_results']} duplicate results."
+    if counts["skipped_submissions"]:
+        summary += f" Skipped {counts['skipped_submissions']} duplicate submissions."
     return summary, []
 
 
@@ -948,6 +1022,120 @@ def restore_result_from_payload(
     )
 
 
+def restore_submission_from_payload(
+    db: Session,
+    index: int,
+    item: dict[str, Any],
+) -> tuple[MemberResultSubmission | None, list[str]]:
+    member_email = clean_text(item.get("member_email")).lower()
+    competition_name = clean_text(item.get("competition_name"))
+    competition_date = parse_date(item.get("competition_date"))
+    style_guide_year = parse_int(item.get("style_guide_year"))
+    style_code = clean_text(item.get("style_subcategory_code"))
+    bjcp_score = parse_decimal(item.get("bjcp_score"))
+    raw_place = item.get("place")
+    place = parse_place_value(raw_place)
+    placement_scope = parse_placement_scope(item.get("placement_scope"))
+    status = parse_submission_status(item.get("status") or "pending")
+    reviewed_at = parse_datetime(item.get("reviewed_at"))
+    created_at = parse_datetime(item.get("created_at")) or datetime.now(UTC)
+    updated_at = parse_datetime(item.get("updated_at")) or created_at
+    recipe_url, recipe_url_error = validate_link_url(
+        item.get("recipe_url"),
+        field_label="recipe_url",
+    )
+    recipe_file_url, recipe_file_url_error = validate_link_url(
+        item.get("recipe_file_url"),
+        field_label="recipe_file_url",
+        allow_upload_path=True,
+    )
+    photo_url, photo_url_error = validate_link_url(
+        item.get("photo_url"),
+        field_label="photo_url",
+        allow_upload_path=True,
+    )
+    errors = []
+
+    member = db.scalar(select(Member).where(Member.email == member_email))
+    if member is None:
+        errors.append(f"Submission {index}: member_email was not found.")
+    competition = None
+    if competition_date is not None:
+        competition = db.scalar(
+            select(Competition).where(
+                Competition.name == competition_name,
+                Competition.date == competition_date,
+            )
+        )
+    if competition is None:
+        errors.append(f"Submission {index}: competition was not found.")
+    subcategory = None
+    if style_guide_year is not None and style_code:
+        subcategory = db.scalar(
+            select(StyleSubcategory)
+            .join(StyleSubcategory.category)
+            .where(
+                StyleCategory.guide_year == style_guide_year,
+                StyleSubcategory.code == style_code,
+            )
+        )
+    if subcategory is None:
+        errors.append(f"Submission {index}: style_subcategory_code was not found.")
+    if bjcp_score is None and item.get("bjcp_score") not in {None, ""}:
+        errors.append(f"Submission {index}: bjcp_score must be a decimal.")
+    if bjcp_score is not None and (bjcp_score <= 0 or bjcp_score > 50):
+        errors.append(
+            f"Submission {index}: bjcp_score must be greater than 0 and no more than 50."
+        )
+    if clean_text(raw_place) and place is None:
+        errors.append(f"Submission {index}: place must be 1, 2, 3, or HM.")
+    elif place is not None and place not in {1, 2, 3, 4}:
+        errors.append(f"Submission {index}: place must be 1st, 2nd, 3rd, or HM.")
+    if (place is None) != (placement_scope is None):
+        errors.append(f"Submission {index}: place and placement_scope must be set together.")
+    if status is None:
+        errors.append(f"Submission {index}: status must be pending, approved, or rejected.")
+    for url_error in (recipe_url_error, recipe_file_url_error, photo_url_error):
+        if url_error:
+            errors.append(f"Submission {index}: {url_error}")
+
+    reviewed_by = None
+    reviewed_by_email = clean_text(item.get("reviewed_by_email")).lower()
+    if reviewed_by_email:
+        reviewed_by = db.scalar(select(Member).where(Member.email == reviewed_by_email))
+        if reviewed_by is None:
+            errors.append(f"Submission {index}: reviewed_by_email was not found.")
+
+    if errors:
+        return None, errors
+
+    assert member is not None
+    assert competition is not None
+    assert subcategory is not None
+    assert status is not None
+    submission = MemberResultSubmission(
+        member_id=member.id,
+        competition_id=competition.id,
+        style_subcategory_id=subcategory.id,
+        bjcp_score=bjcp_score,
+        place=place,
+        placement_scope=placement_scope,
+        recipe_url=recipe_url,
+        recipe_file_url=recipe_file_url,
+        photo_url=photo_url,
+        notes=none_or_text(item.get("notes")),
+        status=status,
+        reviewed_by_member_id=reviewed_by.id if reviewed_by is not None else None,
+        reviewed_at=reviewed_at,
+        rejection_reason=none_or_text(item.get("rejection_reason")),
+        created_at=created_at,
+        updated_at=updated_at,
+    )
+    if status == MemberResultSubmissionStatus.APPROVED:
+        submission.result_id = matching_result_id_for_submission(db, submission)
+    return submission, []
+
+
 def restore_audit_log_from_payload(
     db: Session,
     index: int,
@@ -1004,6 +1192,97 @@ def result_exists(db: Session, key: tuple[Any, ...]) -> bool:
         Result.bjcp_score.is_(None) if bjcp_score is None else Result.bjcp_score == bjcp_score
     )
     return db.scalar(query.limit(1)) is not None
+
+
+def submission_identity_key(submission: MemberResultSubmission) -> tuple[Any, ...]:
+    return (
+        submission.member_id,
+        submission.competition_id,
+        submission.style_subcategory_id,
+        submission.place,
+        submission.placement_scope,
+        submission.bjcp_score,
+        submission.status,
+        submission.created_at,
+    )
+
+
+def submission_exists(db: Session, key: tuple[Any, ...]) -> bool:
+    member_id, competition_id, style_id, place, placement_scope, bjcp_score, status, created_at = (
+        key
+    )
+    query = select(MemberResultSubmission.id).where(
+        MemberResultSubmission.member_id == member_id,
+        MemberResultSubmission.competition_id == competition_id,
+        MemberResultSubmission.style_subcategory_id == style_id,
+        MemberResultSubmission.status == status,
+        MemberResultSubmission.created_at == created_at,
+    )
+    query = query.where(
+        MemberResultSubmission.place.is_(None)
+        if place is None
+        else MemberResultSubmission.place == place
+    )
+    query = query.where(
+        MemberResultSubmission.placement_scope.is_(None)
+        if placement_scope is None
+        else MemberResultSubmission.placement_scope == placement_scope
+    )
+    query = query.where(
+        MemberResultSubmission.bjcp_score.is_(None)
+        if bjcp_score is None
+        else MemberResultSubmission.bjcp_score == bjcp_score
+    )
+    return db.scalar(query.limit(1)) is not None
+
+
+def matching_result_id_for_submission(
+    db: Session,
+    submission: MemberResultSubmission,
+) -> int | None:
+    query = select(Result.id).where(
+        Result.member_id == submission.member_id,
+        Result.competition_id == submission.competition_id,
+        Result.style_subcategory_id == submission.style_subcategory_id,
+    )
+    query = query.where(
+        Result.place.is_(None)
+        if submission.place is None
+        else Result.place == submission.place
+    )
+    query = query.where(
+        Result.placement_scope.is_(None)
+        if submission.placement_scope is None
+        else Result.placement_scope == submission.placement_scope
+    )
+    query = query.where(
+        Result.bjcp_score.is_(None)
+        if submission.bjcp_score is None
+        else Result.bjcp_score == submission.bjcp_score
+    )
+    return db.scalar(query.order_by(Result.id.desc()).limit(1))
+
+
+def submission_exists_for_competition(db: Session, competition_id: int) -> bool:
+    return (
+        db.scalar(
+            select(MemberResultSubmission.id)
+            .where(MemberResultSubmission.competition_id == competition_id)
+            .limit(1)
+        )
+        is not None
+    )
+
+
+def submission_exists_for_member(db: Session, member_id: int) -> bool:
+    return (
+        db.scalar(
+            select(MemberResultSubmission.id)
+            .where(MemberResultSubmission.member_id == member_id)
+            .limit(1)
+        )
+        is not None
+    )
 
 
 def scalar_count(db: Session, statement) -> int:
@@ -1074,5 +1353,12 @@ def parse_placement_scope(value: Any) -> PlacementScope | None:
         return None
     try:
         return PlacementScope(cleaned)
+    except ValueError:
+        return None
+
+
+def parse_submission_status(value: Any) -> MemberResultSubmissionStatus | None:
+    try:
+        return MemberResultSubmissionStatus(clean_text(value))
     except ValueError:
         return None

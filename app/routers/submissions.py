@@ -27,6 +27,7 @@ from app.routers.results import (
 )
 from app.services.audit import record_audit
 from app.services.uploads import (
+    copy_upload_url_to_result,
     delete_upload_url,
     save_submission_upload,
     upload_has_file,
@@ -240,7 +241,12 @@ def approve_result_submission(
     db: Session = Depends(get_db),
     admin: Member = Depends(require_admin),
 ) -> Response:
-    submission = get_submission_or_404(db, submission_id)
+    submission = get_submission_or_404(db, submission_id, for_update=True)
+    if (
+        submission.status == MemberResultSubmissionStatus.APPROVED
+        and submission.result_id is not None
+    ):
+        return RedirectResponse(f"/results/{submission.result_id}", status_code=303)
     if submission.status != MemberResultSubmissionStatus.PENDING:
         return render_submission_detail(
             request,
@@ -277,12 +283,20 @@ def approve_result_submission(
         place=submission.place,
         placement_scope=submission.placement_scope,
         recipe_url=submission.recipe_url,
-        recipe_file_url=submission.recipe_file_url,
-        photo_url=submission.photo_url,
         notes=submission.notes,
     )
     db.add(result)
     db.flush()
+    attachment_errors = promote_submission_attachments(submission, result)
+    if attachment_errors:
+        db.rollback()
+        return render_submission_detail(
+            request,
+            submission=submission,
+            admin_view=True,
+            errors=attachment_errors,
+            status_code=400,
+        )
     submission.status = MemberResultSubmissionStatus.APPROVED
     submission.reviewed_by_member_id = admin.id
     submission.reviewed_at = datetime.now(UTC)
@@ -317,7 +331,7 @@ def reject_result_submission(
     db: Session = Depends(get_db),
     admin: Member = Depends(require_admin),
 ) -> Response:
-    submission = get_submission_or_404(db, submission_id)
+    submission = get_submission_or_404(db, submission_id, for_update=True)
     if submission.status != MemberResultSubmissionStatus.PENDING:
         return render_submission_detail(
             request,
@@ -353,8 +367,8 @@ def ensure_member_can_submit(member: Member) -> None:
         )
 
 
-def submission_select():
-    return select(MemberResultSubmission).options(
+def submission_select(*, for_update: bool = False):
+    statement = select(MemberResultSubmission).options(
         selectinload(MemberResultSubmission.member),
         selectinload(MemberResultSubmission.competition),
         selectinload(MemberResultSubmission.style_subcategory).selectinload(
@@ -363,11 +377,21 @@ def submission_select():
         selectinload(MemberResultSubmission.reviewed_by),
         selectinload(MemberResultSubmission.result),
     )
+    if for_update:
+        statement = statement.with_for_update(of=MemberResultSubmission)
+    return statement
 
 
-def get_submission_or_404(db: Session, submission_id: int) -> MemberResultSubmission:
+def get_submission_or_404(
+    db: Session,
+    submission_id: int,
+    *,
+    for_update: bool = False,
+) -> MemberResultSubmission:
     submission = db.scalar(
-        submission_select().where(MemberResultSubmission.id == submission_id).limit(1)
+        submission_select(for_update=for_update)
+        .where(MemberResultSubmission.id == submission_id)
+        .limit(1)
     )
     if submission is None:
         raise HTTPException(status_code=404, detail="Submission not found")
@@ -418,6 +442,33 @@ def save_submission_attachments(
             saved_urls.append(submission.recipe_file_url)
     except ValueError as error:
         for url in saved_urls:
+            delete_upload_url(url)
+        return [str(error)]
+    return []
+
+
+def promote_submission_attachments(
+    submission: MemberResultSubmission,
+    result: Result,
+) -> list[str]:
+    copied_urls = []
+    try:
+        result.photo_url = copy_upload_url_to_result(
+            result_id=result.id,
+            url=submission.photo_url,
+            kind="photos",
+        )
+        if result.photo_url and result.photo_url != submission.photo_url:
+            copied_urls.append(result.photo_url)
+        result.recipe_file_url = copy_upload_url_to_result(
+            result_id=result.id,
+            url=submission.recipe_file_url,
+            kind="recipes",
+        )
+        if result.recipe_file_url and result.recipe_file_url != submission.recipe_file_url:
+            copied_urls.append(result.recipe_file_url)
+    except ValueError as error:
+        for url in copied_urls:
             delete_upload_url(url)
         return [str(error)]
     return []

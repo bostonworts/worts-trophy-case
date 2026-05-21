@@ -25,6 +25,10 @@ login links and codes are printed to the web container logs. Authenticated form
 posts use CSRF tokens, and member login email requests are rate limited by email
 and client IP.
 
+Good-standing members can submit their own results at `/me/results/new`. Admins
+review pending submissions at `/admin/submissions`; approval creates the public
+result and rejection leaves the member a private reason to correct and resubmit.
+
 Uploaded result photos and recipe files are stored under `/Users/Shared/Docker/trophy-case/uploads` on the host and served locally from `/uploads`.
 
 To use a different host port:
@@ -148,6 +152,7 @@ All Docker bind mounts live under `/Users/Shared/Docker/trophy-case/`. The `bin/
 - Local signed-cookie admin login at `/login`
 - Roster-backed member magic-link and code login at `/member-login`
 - Member profile redirect at `/me`
+- Member-submitted results with admin approval or rejection
 - Local photo and recipe-file uploads for results
 - Searchable result-entry selectors for members, competitions, and BJCP styles
 - Configurable leaderboard season start, placement points, BJCP threshold, and competition type weights

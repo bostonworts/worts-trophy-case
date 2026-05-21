@@ -144,6 +144,14 @@ development, links and codes are printed to web logs.
 
 Before inviting members, test a good-standing member and a lapsed/inactive member.
 
+## Member Submissions
+
+Good-standing members can submit their own winnings at `/me/results/new`. New
+submissions stay out of the public archive until an admin approves them at
+`/admin/submissions`; approval creates the public result and copies any uploaded
+recipe or photo into the result upload directory. Rejections stay visible to the
+member with the admin's reason.
+
 ## Backups
 
 The app's admin JSON backup is useful, but production backup needs both Postgres
@@ -207,6 +215,7 @@ docker compose -f compose.prod.yaml logs --tail=100 web
 - Admin dashboard reports member login delivery as `SMTP`.
 - A good-standing member can use both magic link and six-digit code.
 - A lapsed or inactive member does not receive a login email.
+- A good-standing member can submit a result and an admin can approve or reject it.
 - `bin/prod-backup` produces both `postgres.dump` and `uploads.tar.gz`.
 - A recent backup has been restored successfully in a throwaway environment.
 

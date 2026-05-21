@@ -29,10 +29,22 @@ The seeded demo runs at `http://localhost:8011`. Clean it up with:
 
 1. Ask a member in good standing to open `/member-login`.
 2. Have them enter either their PayPal email or list email.
-3. Confirm they receive a login code.
-4. Confirm the code redirects them to `/me`.
-5. Confirm `/me` shows their public results and leaderboard points.
-6. Confirm `/members` still redirects for a non-admin member.
+3. Confirm they receive one email with a magic login link and six-digit code.
+4. Confirm the link redirects them to `/me`.
+5. Log out, request a fresh email, and confirm the six-digit code also redirects them to `/me`.
+6. Confirm `/me` shows their public results and leaderboard points.
+7. Confirm `/members` still redirects for a non-admin member.
+
+## Member Submissions
+
+1. Log in as a member in good standing.
+2. Open `/me/results/new`.
+3. Submit a result with a BJCP score, HM placement if relevant, notes, and optional recipe/photo attachments.
+4. Confirm the member sees the submission as pending under `/me/submissions`.
+5. Log in as an admin and open `/admin/submissions`.
+6. Approve the submission and confirm it creates a public result.
+7. Submit another disposable result and reject it with a short reason.
+8. Confirm the member can see the rejection reason under `/me/submissions`.
 
 ## Negative Checks
 
@@ -45,7 +57,7 @@ The seeded demo runs at `http://localhost:8011`. Clean it up with:
 
 1. Download `/admin/data/backup.json`.
 2. Restore it into a throwaway database or local reset environment.
-3. Confirm members, PayPal emails, list emails, good-standing flags, competitions, and results came back.
+3. Confirm members, PayPal emails, list emails, good-standing flags, competitions, results, and member submissions came back.
 4. Add a disposable result with an uploaded recipe file.
 5. Archive and restore that result.
 6. Use clear-results only in the throwaway environment and confirm uploaded files are removed.

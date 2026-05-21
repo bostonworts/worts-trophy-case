@@ -1,19 +1,21 @@
 from __future__ import annotations
 
 import json
-from datetime import date
+from datetime import UTC, date, datetime
 from decimal import Decimal
 
 from fastapi.testclient import TestClient
-from sqlalchemy import delete, select
+from sqlalchemy import delete, or_, select
 
 from app.db.models import (
+    AuditLog,
     Competition,
     CompetitionType,
-    AuditLog,
     Member,
     MemberEmail,
     MemberEmailKind,
+    MemberResultSubmission,
+    MemberResultSubmissionStatus,
     PlacementScope,
     Result,
     StyleCategory,
@@ -79,6 +81,31 @@ def cleanup_admin_tools_data() -> None:
                 select(Result).where(Result.style_subcategory_id.in_(subcategory_ids))
             ).all()
             result_urls.extend((result.photo_url, result.recipe_file_url) for result in results)
+
+        submission_filters = []
+        if member is not None:
+            submission_filters.append(MemberResultSubmission.member_id == member.id)
+        if competition_ids:
+            submission_filters.append(MemberResultSubmission.competition_id.in_(competition_ids))
+        if subcategory_ids:
+            submission_filters.append(
+                MemberResultSubmission.style_subcategory_id.in_(subcategory_ids)
+            )
+        if submission_filters:
+            submissions = db.scalars(
+                select(MemberResultSubmission).where(or_(*submission_filters))
+            ).all()
+            result_urls.extend(
+                (submission.photo_url, submission.recipe_file_url)
+                for submission in submissions
+            )
+            db.execute(
+                delete(MemberResultSubmission).where(
+                    MemberResultSubmission.id.in_(
+                        [submission.id for submission in submissions]
+                    )
+                )
+            )
 
         for photo_url, recipe_file_url in result_urls:
             delete_upload_url(photo_url)
@@ -152,6 +179,64 @@ def create_admin_tools_result() -> int:
         return result.id
 
 
+def create_admin_tools_submission(result_id: int) -> int:
+    with SessionLocal() as db:
+        result = db.get(Result, result_id)
+        assert result is not None
+        submission = MemberResultSubmission(
+            member_id=result.member_id,
+            competition_id=result.competition_id,
+            style_subcategory_id=result.style_subcategory_id,
+            bjcp_score=result.bjcp_score,
+            place=result.place,
+            placement_scope=result.placement_scope,
+            recipe_url="https://example.test/admin-tools-recipe",
+            notes="Admin backup submission.",
+            status=MemberResultSubmissionStatus.APPROVED,
+            reviewed_at=datetime.now(UTC),
+            result_id=result.id,
+        )
+        db.add(submission)
+        db.commit()
+        return submission.id
+
+
+def create_admin_tools_archived_submission() -> tuple[int, int, int]:
+    cleanup_admin_tools_data()
+    with SessionLocal() as db:
+        member = Member(
+            email=ADMIN_MEMBER_EMAIL,
+            display_name="Admin Tools Member",
+            deactivated_at=datetime.now(UTC),
+        )
+        competition = Competition(
+            name=ADMIN_COMPETITION_NAME,
+            date=date(2026, 5, 18),
+            competition_type=CompetitionType.BJCP_SANCTIONED,
+            archived_at=datetime.now(UTC),
+        )
+        category = StyleCategory(
+            guide_year=ADMIN_GUIDE_YEAR,
+            code=ADMIN_CATEGORY_CODE,
+            name="Admin Tools Category",
+        )
+        subcategory = StyleSubcategory(
+            category=category,
+            code=ADMIN_SUBCATEGORY_CODE,
+            name="Admin Tools Style",
+        )
+        submission = MemberResultSubmission(
+            member=member,
+            competition=competition,
+            style_subcategory=subcategory,
+            bjcp_score=Decimal("38.0"),
+            notes="Pending archived submission.",
+        )
+        db.add(submission)
+        db.commit()
+        return competition.id, member.id, submission.id
+
+
 def attach_recipe_file(result_id: int) -> str:
     target = upload_root() / "results" / str(result_id) / "recipes" / "clear-test.txt"
     target.parent.mkdir(parents=True, exist_ok=True)
@@ -177,7 +262,8 @@ def test_admin_dashboard_requires_admin(admin_client) -> None:
 
 
 def test_admin_backup_and_restore_round_trip(admin_client) -> None:
-    create_admin_tools_result()
+    result_id = create_admin_tools_result()
+    create_admin_tools_submission(result_id)
     try:
         backup_response = admin_client.get("/admin/data/backup.json")
         assert backup_response.status_code == 200
@@ -186,6 +272,8 @@ def test_admin_backup_and_restore_round_trip(admin_client) -> None:
         assert ADMIN_MEMBER_EMAIL in backup_response.text
         assert ADMIN_MEMBER_PAYPAL_EMAIL in backup_response.text
         assert ADMIN_MEMBER_LIST_EMAIL in backup_response.text
+        assert "member_result_submissions" in backup
+        assert "Admin backup submission." in backup_response.text
 
         cleanup_admin_tools_data()
         restore_response = admin_client.post(
@@ -216,6 +304,15 @@ def test_admin_backup_and_restore_round_trip(admin_client) -> None:
             assert restored_competition is not None
             assert restored_result is not None
             assert restored_result.bjcp_score == Decimal("41.0")
+            restored_submission = db.scalar(
+                select(MemberResultSubmission)
+                .join(MemberResultSubmission.member)
+                .where(Member.email == ADMIN_MEMBER_EMAIL)
+            )
+            assert restored_submission is not None
+            assert restored_submission.status == MemberResultSubmissionStatus.APPROVED
+            assert restored_submission.result_id == restored_result.id
+            assert restored_submission.notes == "Admin backup submission."
             aliases = {
                 alias.kind: alias.email
                 for alias in db.scalars(
@@ -265,6 +362,23 @@ def test_admin_clear_results_deletes_uploaded_files(admin_client) -> None:
 
         assert response.status_code == 200
         assert admin_client.get(recipe_file_url).status_code == 404
+    finally:
+        cleanup_admin_tools_data()
+
+
+def test_admin_clear_archive_keeps_records_with_submissions(admin_client) -> None:
+    competition_id, member_id, submission_id = create_admin_tools_archived_submission()
+    try:
+        response = admin_client.post(
+            "/admin/data/clear-archive",
+            data={"confirm_text": "CLEAR ARCHIVE"},
+        )
+
+        assert response.status_code == 200
+        with SessionLocal() as db:
+            assert db.get(Competition, competition_id) is not None
+            assert db.get(Member, member_id) is not None
+            assert db.get(MemberResultSubmission, submission_id) is not None
     finally:
         cleanup_admin_tools_data()
 

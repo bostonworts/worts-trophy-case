@@ -54,6 +54,21 @@ def cleanup_submission_data() -> None:
                 )
             )
 
+        result_urls = []
+        if competition_ids:
+            results = db.scalars(
+                select(Result).where(Result.competition_id.in_(competition_ids))
+            ).all()
+            result_urls.extend((result.photo_url, result.recipe_file_url) for result in results)
+        if member_ids:
+            results = db.scalars(select(Result).where(Result.member_id.in_(member_ids))).all()
+            result_urls.extend((result.photo_url, result.recipe_file_url) for result in results)
+        if subcategory_ids:
+            results = db.scalars(
+                select(Result).where(Result.style_subcategory_id.in_(subcategory_ids))
+            ).all()
+            result_urls.extend((result.photo_url, result.recipe_file_url) for result in results)
+
         if member_ids:
             db.execute(delete(AuditLog).where(AuditLog.actor_member_id.in_(member_ids)))
 
@@ -75,6 +90,10 @@ def cleanup_submission_data() -> None:
                     MemberResultSubmission.id.in_([submission.id for submission in submissions])
                 )
             )
+
+        for photo_url, recipe_file_url in result_urls:
+            delete_upload_url(photo_url)
+            delete_upload_url(recipe_file_url)
 
         if competition_ids:
             db.execute(delete(Result).where(Result.competition_id.in_(competition_ids)))
@@ -137,7 +156,13 @@ def csrf_token(client: TestClient) -> str:
     return token
 
 
-def submit_result(client: TestClient, competition_id: int, subcategory_id: int) -> int:
+def submit_result(
+    client: TestClient,
+    competition_id: int,
+    subcategory_id: int,
+    *,
+    files: dict[str, tuple[str, bytes, str]] | None = None,
+) -> int:
     response = client.post(
         "/me/results",
         data={
@@ -150,6 +175,7 @@ def submit_result(client: TestClient, competition_id: int, subcategory_id: int) 
             "notes": "Member submitted this.",
             "csrf_token": csrf_token(client),
         },
+        files=files,
         follow_redirects=False,
     )
     assert response.status_code == 303
@@ -199,15 +225,84 @@ def test_member_can_submit_result_and_admin_can_approve(admin_client) -> None:
             result = db.scalar(select(Result).where(Result.member_id == member_id))
             assert submission is not None
             assert result is not None
+            result_id = result.id
             assert submission.status == MemberResultSubmissionStatus.APPROVED
             assert submission.result_id == result.id
             assert result.bjcp_score == Decimal("41.0")
             assert result.place == 4
             assert result.notes == "Member submitted this."
 
+        second_approve_response = admin_client.post(
+            f"/admin/submissions/{submission_id}/approve",
+            follow_redirects=False,
+        )
+        assert second_approve_response.status_code == 303
+        assert second_approve_response.headers["location"] == f"/results/{result_id}"
+        with SessionLocal() as db:
+            result_ids = list(
+                db.scalars(select(Result.id).where(Result.member_id == member_id))
+            )
+            assert result_ids == [result_id]
+
         result_response = admin_client.get(approve_response.headers["location"])
         assert result_response.status_code == 200
         assert "HM in category" in result_response.text
+    finally:
+        cleanup_submission_data()
+
+
+def test_admin_approval_copies_submission_uploads_to_result(admin_client) -> None:
+    member_id, competition_id, subcategory_id = create_submission_records()
+    try:
+        client = member_client(member_id)
+        submission_id = submit_result(
+            client,
+            competition_id,
+            subcategory_id,
+            files={
+                "photo": ("entry.png", b"fake image bytes", "image/png"),
+                "recipe_file": ("recipe.pdf", b"%PDF-1.4 fake pdf", "application/pdf"),
+            },
+        )
+        with SessionLocal() as db:
+            submission = db.get(MemberResultSubmission, submission_id)
+            assert submission is not None
+            submission_photo_url = submission.photo_url
+            submission_recipe_file_url = submission.recipe_file_url
+            assert submission_photo_url is not None
+            assert submission_recipe_file_url is not None
+            assert submission_photo_url.startswith(
+                f"/uploads/submissions/{submission.id}/photos/"
+            )
+            assert submission_recipe_file_url.startswith(
+                f"/uploads/submissions/{submission.id}/recipes/"
+            )
+
+        assert admin_client.get(submission_photo_url).status_code == 200
+        assert admin_client.get(submission_recipe_file_url).status_code == 200
+
+        approve_response = admin_client.post(
+            f"/admin/submissions/{submission_id}/approve",
+            follow_redirects=False,
+        )
+        assert approve_response.status_code == 303
+
+        with SessionLocal() as db:
+            result = db.scalar(select(Result).where(Result.member_id == member_id))
+            assert result is not None
+            result_photo_url = result.photo_url
+            result_recipe_file_url = result.recipe_file_url
+            assert result_photo_url is not None
+            assert result_recipe_file_url is not None
+            assert result_photo_url.startswith(f"/uploads/results/{result.id}/photos/")
+            assert result_recipe_file_url.startswith(f"/uploads/results/{result.id}/recipes/")
+            assert result_photo_url != submission_photo_url
+            assert result_recipe_file_url != submission_recipe_file_url
+
+        assert admin_client.get(result_photo_url).status_code == 200
+        assert admin_client.get(result_recipe_file_url).status_code == 200
+        assert admin_client.get(submission_photo_url).status_code == 200
+        assert admin_client.get(submission_recipe_file_url).status_code == 200
     finally:
         cleanup_submission_data()
 

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+import shutil
 from pathlib import Path
 from secrets import token_urlsafe
 
@@ -44,6 +45,34 @@ def save_submission_upload(
     )
 
 
+def copy_upload_url_to_result(
+    *,
+    result_id: int,
+    url: str | None,
+    kind: str,
+) -> str | None:
+    if url is None:
+        return None
+    return copy_upload_url(
+        url=url,
+        target_dir=upload_root() / "results" / str(result_id) / kind,
+    )
+
+
+def copy_upload_url(*, url: str, target_dir: Path) -> str:
+    source = upload_path_for_url(url)
+    if source is None:
+        return url
+    if not source.exists():
+        raise ValueError("Uploaded file is missing.")
+
+    target_dir.mkdir(parents=True, exist_ok=True)
+    filename = safe_filename(source.name)
+    target = target_dir / f"{token_urlsafe(10)}-{filename}"
+    shutil.copy2(source, target)
+    return path_to_url(target)
+
+
 def save_upload(
     *,
     upload: UploadFile,
@@ -73,13 +102,8 @@ def save_upload(
 
 
 def delete_upload_url(url: str | None) -> None:
-    if not url or not url.startswith(f"{url_prefix()}/"):
-        return
-
-    relative = url.removeprefix(f"{url_prefix()}/")
-    target = (upload_root() / relative).resolve()
-    root = upload_root().resolve()
-    if root == target or root not in target.parents:
+    target = upload_path_for_url(url)
+    if target is None:
         return
     target.unlink(missing_ok=True)
 
@@ -97,6 +121,18 @@ def validate_upload(*, upload: UploadFile, kind: str) -> str:
 def path_to_url(path: Path) -> str:
     relative = path.resolve().relative_to(upload_root().resolve())
     return f"{url_prefix()}/{relative.as_posix()}"
+
+
+def upload_path_for_url(url: str | None) -> Path | None:
+    if not url or not url.startswith(f"{url_prefix()}/"):
+        return None
+
+    relative = url.removeprefix(f"{url_prefix()}/")
+    target = (upload_root() / relative).resolve()
+    root = upload_root().resolve()
+    if root == target or root not in target.parents:
+        return None
+    return target
 
 
 def upload_root() -> Path:
