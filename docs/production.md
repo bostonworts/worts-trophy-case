@@ -103,7 +103,9 @@ curl -fsS https://trophycase.worts.club/healthz
 
 The web service runs `alembic upgrade head` before Uvicorn starts. Caddy serves
 ports `80` and `443`, stores certificates in `/opt/trophy-case/caddy/data`, and
-reverse proxies to the internal web container.
+reverse proxies to the internal web container. Postgres stays on the internal
+network; the web container also joins an outbound network so SMTP and Google
+Sheet imports can reach the internet.
 
 For later deploys:
 

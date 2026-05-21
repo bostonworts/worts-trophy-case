@@ -66,6 +66,7 @@ services:
       retries: 10
     networks:
       - backend
+      - egress
 
   caddy:
     image: caddy:2-alpine
@@ -99,5 +100,6 @@ configs:
 
 networks:
   public:
+  egress:
   backend:
     internal: true
