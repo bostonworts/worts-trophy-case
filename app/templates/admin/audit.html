@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+
+{% block title %}Audit Log - Trophy Case{% endblock %}
+
+{% block content %}
+<header class="page-header">
+  <div>
+    <p class="kicker">Admin</p>
+    <h1>Audit log</h1>
+  </div>
+  <a class="button-secondary" href="/admin">Dashboard</a>
+</header>
+
+<section class="panel">
+  {% if entries %}
+  <table>
+    <thead>
+      <tr>
+        <th>When</th>
+        <th>Actor</th>
+        <th>Action</th>
+        <th>Entity</th>
+        <th>Summary</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for entry in entries %}
+      <tr>
+        <td>{{ entry.created_at.strftime("%Y-%m-%d %H:%M") }}</td>
+        <td>
+          {% if entry.actor %}
+          {{ entry.actor.display_name }}
+          {% else %}
+          System
+          {% endif %}
+        </td>
+        <td>{{ entry.action }}</td>
+        <td>
+          {{ entry.entity_type }}
+          {% if entry.entity_id %}
+          #{{ entry.entity_id }}
+          {% endif %}
+        </td>
+        <td>{{ entry.summary }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="empty">No audit entries yet.</div>
+  {% endif %}
+</section>
+{% endblock %}

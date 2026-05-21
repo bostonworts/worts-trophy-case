@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Login - Trophy Case{% endblock %}
+
+{% block content %}
+<header class="page-header">
+  <div>
+    <p class="kicker">Admin</p>
+    <h1>Login</h1>
+  </div>
+  <a class="button-secondary" href="/member-login">Member Login</a>
+</header>
+
+<form class="panel auth-panel" method="post" action="/login">
+  {% include "_csrf.html" %}
+  {% if errors %}
+  <div class="form-errors" role="alert">
+    {% for error in errors %}
+    <p>{{ error }}</p>
+    {% endfor %}
+  </div>
+  {% endif %}
+  <div class="form-grid">
+    <div class="field field-full">
+      <label for="email">Email</label>
+      <input id="email" name="email" type="email" value="{{ email }}" required autofocus>
+      <input name="next" type="hidden" value="{{ next_url }}">
+    </div>
+    {% if login_code_required %}
+    <div class="field field-full">
+      <label for="login_code">Admin Login Code</label>
+      <input id="login_code" name="login_code" type="password" autocomplete="current-password" required>
+    </div>
+    {% endif %}
+  </div>
+  <div class="form-actions">
+    <button type="submit">Login</button>
+  </div>
+</form>
+{% endblock %}

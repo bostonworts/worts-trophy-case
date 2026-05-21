@@ -1,0 +1,293 @@
+{% extends "base.html" %}
+
+{% block title %}Results - Trophy Case{% endblock %}
+
+{% block content %}
+<header class="page-header">
+  <div>
+    <p class="kicker">Archive</p>
+    <h1>Competition results</h1>
+  </div>
+  {% if request.state.current_member and request.state.current_member.is_admin %}
+  <div class="inline-actions">
+    <a class="button-secondary" href="/results.csv">Export CSV</a>
+    <a class="button-secondary" href="/results/import">Import CSV</a>
+    <a class="button" href="/results/new">Add Result</a>
+  </div>
+  {% endif %}
+</header>
+
+<section class="metric-grid">
+  <article class="metric-card">
+    <span>Results</span>
+    <strong>{{ archive_stats.results }}</strong>
+    <small>{% if filters_active %}matching filters{% else %}active archive{% endif %}</small>
+  </article>
+  <article class="metric-card">
+    <span>Members</span>
+    <strong>{{ archive_stats.members }}</strong>
+    <small>with active results</small>
+  </article>
+  <article class="metric-card">
+    <span>Competitions</span>
+    <strong>{{ archive_stats.competitions }}</strong>
+    <small>represented</small>
+  </article>
+  <article class="metric-card">
+    <span>Placements</span>
+    <strong>{{ archive_stats.placed }}</strong>
+    <small>placed results</small>
+  </article>
+</section>
+
+<form class="filter-bar" method="get" action="/results">
+  <div class="field filter-search">
+    <label for="q">Keyword</label>
+    <input id="q" name="q" type="search" value="{{ filters.q }}" placeholder="Member, competition, style" data-autosubmit>
+  </div>
+  <div class="filter-controls">
+    <div class="field">
+      <label for="season">Season</label>
+      <select id="season" name="season" onchange="this.form.submit()">
+        <option value="">All seasons</option>
+        {% for season in seasons %}
+        <option value="{{ season.label }}" {% if filters.season == season %}selected{% endif %}>{{ season.label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="field">
+      <label for="member_id">Member</label>
+      <select id="member_id" name="member_id" onchange="this.form.submit()">
+        <option value="">All members</option>
+        {% for member in members %}
+        <option value="{{ member.id }}" {% if filters.member_id == member.id %}selected{% endif %}>{{ member.display_name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="field">
+      <label for="competition_id">Competition</label>
+      <select id="competition_id" name="competition_id" onchange="this.form.submit()">
+        <option value="">All competitions</option>
+        {% for competition in competitions %}
+        <option value="{{ competition.id }}" {% if filters.competition_id == competition.id %}selected{% endif %}>{{ competition.date.isoformat() }} {{ competition.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="field">
+      <label for="category_id">BJCP category</label>
+      <select id="category_id" name="category_id" onchange="this.form.submit()">
+        <option value="">All categories</option>
+        {% for category in categories %}
+        <option value="{{ category.id }}" {% if filters.category_id == category.id %}selected{% endif %}>{{ category.code }} {{ category.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="field">
+      <label for="placement">Placement</label>
+      <select id="placement" name="placement" onchange="this.form.submit()">
+        <option value="">All results</option>
+        {% for value, label in placement_filters.items() %}
+        <option value="{{ value }}" {% if filters.placement == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    {% if filters_active %}
+    <a class="button-secondary filter-clear" href="/results">Reset filters</a>
+    {% endif %}
+  </div>
+  {% if filters.style_subcategory_id %}
+  <input type="hidden" name="style_subcategory_id" value="{{ filters.style_subcategory_id }}">
+  {% endif %}
+</form>
+
+<script>
+  const keywordFocusKey = "trophyCase.results.keywordFocus";
+
+  const rememberKeywordFocus = (input) => {
+    try {
+      sessionStorage.setItem(keywordFocusKey, input.id);
+    } catch {
+      // Search still works if session storage is unavailable.
+    }
+  };
+
+  const restoreKeywordFocus = (input) => {
+    try {
+      if (sessionStorage.getItem(keywordFocusKey) !== input.id) {
+        return;
+      }
+      sessionStorage.removeItem(keywordFocusKey);
+    } catch {
+      return;
+    }
+
+    requestAnimationFrame(() => {
+      input.focus();
+      const caretPosition = input.value.length;
+      input.setSelectionRange(caretPosition, caretPosition);
+    });
+  };
+
+  for (const input of document.querySelectorAll("[data-autosubmit]")) {
+    const form = input.form;
+    let timeoutId;
+    restoreKeywordFocus(input);
+    const submit = () => {
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => {
+        rememberKeywordFocus(input);
+        form.submit();
+      }, 450);
+    };
+    input.addEventListener("input", submit);
+    input.addEventListener("search", submit);
+  }
+</script>
+
+<section class="panel">
+  <div class="panel-heading">
+    <div>
+      <h2>Active results</h2>
+      <p>{{ archive_stats.results }} {% if archive_stats.results == 1 %}entry{% else %}entries{% endif %}{% if filters_active %} match the current filters{% endif %}</p>
+    </div>
+  </div>
+  {% if active_results %}
+  <table class="results-table">
+    <thead>
+      <tr>
+        <th>Date</th>
+        <th>Member</th>
+        <th>Competition</th>
+        <th>Style</th>
+        <th>Score</th>
+        <th>Place</th>
+        <th>Attachments</th>
+        {% if request.state.current_member and request.state.current_member.is_admin %}
+        <th></th>
+        {% endif %}
+      </tr>
+    </thead>
+    <tbody>
+      {% for result in active_results %}
+      <tr>
+        <td>
+          <span class="table-primary">{{ result.competition.date.isoformat() }}</span>
+        </td>
+        <td>
+          <a class="result-link table-primary" href="/members/{{ result.member.id }}">{{ result.member.display_name }}</a>
+        </td>
+        <td>
+          <a class="result-link table-primary" href="/competitions/{{ result.competition.id }}">{{ result.competition.name }}</a>
+          <span class="table-secondary">{{ result.competition.competition_type.value.replace("_", " ") }}</span>
+        </td>
+        <td>
+          <a class="result-link table-primary" href="/results/{{ result.id }}">{{ result.style_subcategory.code }} {{ result.style_subcategory.name }}</a>
+          <span class="table-secondary">{{ result.style_subcategory.category.code }} {{ result.style_subcategory.category.name }}</span>
+        </td>
+        <td>{% if result.bjcp_score %}<span class="table-primary">{{ result.bjcp_score }}</span>{% else %}<span class="muted">Not scored</span>{% endif %}</td>
+        <td>
+          {% if result.place %}
+          <span class="table-primary">{{ result.place }}{% if result.place == 1 %}st{% elif result.place == 2 %}nd{% elif result.place == 3 %}rd{% else %}th{% endif %}</span>
+          <span class="table-secondary">{{ result.placement_scope.value.replace("_", " ") }}</span>
+          {% else %}
+          <span class="muted">Unplaced</span>
+          {% endif %}
+        </td>
+        <td>
+          <div class="attachment-list">
+            {% if result.recipe_url %}
+            <a href="{{ result.recipe_url }}">Recipe URL</a>
+            {% endif %}
+            {% if result.recipe_file_url %}
+            <a href="{{ result.recipe_file_url }}">Recipe file</a>
+            {% endif %}
+            {% if result.photo_url %}
+            <a href="{{ result.photo_url }}">Photo</a>
+            {% endif %}
+            {% if not result.recipe_url and not result.recipe_file_url and not result.photo_url %}
+            <span class="muted">None</span>
+            {% endif %}
+          </div>
+        </td>
+        {% if request.state.current_member and request.state.current_member.is_admin %}
+          <td class="table-action">
+            <div class="inline-actions">
+              <a class="button-secondary" href="/results/{{ result.id }}/edit">Edit</a>
+              <form method="post" action="/results/{{ result.id }}/archive">
+                {% include "_csrf.html" %}
+                <button class="button-secondary" type="submit">Archive</button>
+              </form>
+            </div>
+          </td>
+        {% endif %}
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="empty">
+    <strong>{% if filters_active %}No matches{% else %}No results yet{% endif %}</strong>
+    {% if filters_active %}No results match those filters.{% else %}Add results to start building the archive.{% endif %}
+  </div>
+  {% endif %}
+</section>
+
+{% if archived_results %}
+<section class="panel archive-panel">
+  <div class="panel-heading">
+    <h2>Archived results</h2>
+  </div>
+  <table class="results-table">
+    <thead>
+      <tr>
+        <th>Date</th>
+        <th>Member</th>
+        <th>Competition</th>
+        <th>Style</th>
+        <th>Place</th>
+        <th>Archived</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for result in archived_results %}
+      <tr>
+        <td>
+          <span class="table-primary">{{ result.competition.date.isoformat() }}</span>
+        </td>
+        <td><a class="result-link table-primary" href="/members/{{ result.member.id }}">{{ result.member.display_name }}</a></td>
+        <td><a class="result-link table-primary" href="/competitions/{{ result.competition.id }}">{{ result.competition.name }}</a></td>
+        <td><a class="result-link table-primary" href="/results/{{ result.id }}">{{ result.style_subcategory.code }} {{ result.style_subcategory.name }}</a></td>
+        <td>
+          {% if result.place %}
+          <span class="table-primary">{{ result.place }}{% if result.place == 1 %}st{% elif result.place == 2 %}nd{% elif result.place == 3 %}rd{% else %}th{% endif %}</span>
+          <span class="table-secondary">{{ result.placement_scope.value.replace("_", " ") }}</span>
+          {% else %}
+          <span class="muted">Unplaced</span>
+          {% endif %}
+        </td>
+        <td>
+          {% if result.archived_at %}
+          Result {{ result.archived_at.date().isoformat() }}
+          {% elif result.competition.archived_at %}
+          Competition {{ result.competition.archived_at.date().isoformat() }}
+          {% endif %}
+        </td>
+        <td class="table-action">
+          <div class="inline-actions">
+            <a class="button-secondary" href="/results/{{ result.id }}/edit">Edit</a>
+            {% if result.archived_at %}
+            <form method="post" action="/results/{{ result.id }}/restore">
+              {% include "_csrf.html" %}
+              <button class="button-secondary" type="submit">Restore</button>
+            </form>
+            {% endif %}
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,103 @@
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-trophy_case}
+      POSTGRES_USER: ${POSTGRES_USER:-trophy}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD for the production database}
+    volumes:
+      - type: bind
+        source: /opt/trophy-case/postgres
+        target: /var/lib/postgresql/data
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - backend
+
+  web:
+    build: .
+    restart: unless-stopped
+    environment:
+      APP_SECRET_KEY: ${APP_SECRET_KEY:?Set APP_SECRET_KEY to a long random production secret}
+      ADMIN_LOGIN_CODE: ${ADMIN_LOGIN_CODE:?Set ADMIN_LOGIN_CODE for production admin access}
+      ADMIN_SETUP_CODE: ${ADMIN_SETUP_CODE:-}
+      DATABASE_URL: "postgresql+psycopg://${POSTGRES_USER:-trophy}:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD for the production database}@db:5432/${POSTGRES_DB:-trophy_case}"
+      LOCAL_LOGIN_ENABLED: ${LOCAL_LOGIN_ENABLED:-true}
+      SESSION_COOKIE_SECURE: ${SESSION_COOKIE_SECURE:-true}
+      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:?Set PUBLIC_BASE_URL to https://trophycase.worts.club for login links}
+      UPLOAD_DIR: /uploads
+      UPLOAD_URL_PREFIX: /uploads
+      EMAIL_FROM: ${EMAIL_FROM:?Set EMAIL_FROM for production member login email}
+      SMTP_HOST: ${SMTP_HOST:?Set SMTP_HOST for production member login email}
+      SMTP_PORT: ${SMTP_PORT:-2525}
+      SMTP_USERNAME: ${SMTP_USERNAME:?Set SMTP_USERNAME for production member login email}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:?Set SMTP_PASSWORD for production member login email}
+      SMTP_USE_TLS: ${SMTP_USE_TLS:-true}
+      ADMIN_LOGIN_ATTEMPT_LIMIT: ${ADMIN_LOGIN_ATTEMPT_LIMIT:-10}
+      ADMIN_LOGIN_RATE_LIMIT_WINDOW_SECONDS: ${ADMIN_LOGIN_RATE_LIMIT_WINDOW_SECONDS:-3600}
+      MEMBER_LOGIN_REQUEST_LIMIT: ${MEMBER_LOGIN_REQUEST_LIMIT:-5}
+      MEMBER_LOGIN_VERIFY_LIMIT: ${MEMBER_LOGIN_VERIFY_LIMIT:-10}
+      MEMBER_LOGIN_RATE_LIMIT_WINDOW_SECONDS: ${MEMBER_LOGIN_RATE_LIMIT_WINDOW_SECONDS:-3600}
+      GOOGLE_SHEET_FETCH_TIMEOUT_SECONDS: ${GOOGLE_SHEET_FETCH_TIMEOUT_SECONDS:-10}
+      GOOGLE_SHEET_IMPORT_MAX_BYTES: ${GOOGLE_SHEET_IMPORT_MAX_BYTES:-2000000}
+    volumes:
+      - type: bind
+        source: /opt/trophy-case/uploads
+        target: /uploads
+    depends_on:
+      db:
+        condition: service_healthy
+    command:
+      - sh
+      - -c
+      - alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000 --proxy-headers --forwarded-allow-ips='*'
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/healthz', timeout=2)"
+      interval: 10s
+      timeout: 3s
+      retries: 10
+    networks:
+      - backend
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    environment:
+      ACME_EMAIL: ${ACME_EMAIL:?Set ACME_EMAIL for Let's Encrypt account notices}
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - type: bind
+        source: /opt/trophy-case/caddy/data
+        target: /data
+      - type: bind
+        source: /opt/trophy-case/caddy/config
+        target: /config
+    configs:
+      - source: caddyfile
+        target: /etc/caddy/Caddyfile
+    depends_on:
+      web:
+        condition: service_healthy
+    networks:
+      - public
+      - backend
+
+configs:
+  caddyfile:
+    file: ./Caddyfile
+
+networks:
+  public:
+  backend:
+    internal: true

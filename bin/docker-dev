@@ -1,0 +1,21 @@
+#!/usr/bin/env sh
+set -eu
+
+project_dir=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+mount_root=/Users/Shared/Docker/trophy-case
+app_mount="$mount_root/app"
+postgres_mount="$mount_root/postgres"
+uploads_mount="$mount_root/uploads"
+
+mkdir -p "$app_mount" "$postgres_mount" "$uploads_mount"
+
+rsync -a --delete \
+  --exclude ".git" \
+  --exclude ".venv" \
+  --exclude "__pycache__" \
+  --exclude ".pytest_cache" \
+  --exclude ".ruff_cache" \
+  "$project_dir"/ "$app_mount"/
+
+cd "$project_dir"
+exec docker compose up --build "$@"

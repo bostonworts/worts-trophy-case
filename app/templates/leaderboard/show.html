@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+
+{% block title %}Leaderboard - Trophy Case{% endblock %}
+
+{% block content %}
+<header class="page-header">
+  <div>
+    <p class="kicker">Season {{ selected_season.label }}</p>
+    <h1>Leaderboard</h1>
+  </div>
+  {% if request.state.current_member and request.state.current_member.is_admin %}
+  <a class="button-secondary" href="/admin/leaderboard">Settings</a>
+  {% endif %}
+</header>
+
+<form class="toolbar" method="get" action="/leaderboard">
+  <label for="season">Season</label>
+  <select id="season" name="season" onchange="this.form.submit()">
+    {% for season in seasons %}
+    <option value="{{ season.label }}" {% if season == selected_season %}selected{% endif %}>{{ season.label }}</option>
+    {% endfor %}
+  </select>
+</form>
+
+{% if rows %}
+<section class="leaderboard-podium" aria-label="Top members">
+  {% for row in rows[:3] %}
+  <article class="podium-card">
+    <span class="rank-badge">#{{ loop.index }}</span>
+    <strong><a class="result-link" href="/members/{{ row.member_id }}">{{ row.display_name }}</a></strong>
+    <p><span class="points-pill">{{ row.points }} pts</span></p>
+  </article>
+  {% endfor %}
+</section>
+{% endif %}
+
+<section class="panel">
+  {% if rows %}
+  <div class="panel-heading">
+    <div>
+      <h2>Season standings</h2>
+      <p>{{ rows|length }} {% if rows|length == 1 %}member{% else %}members{% endif %} with leaderboard points</p>
+    </div>
+  </div>
+  <table class="record-table">
+    <thead>
+      <tr>
+        <th>Rank</th>
+        <th>Member</th>
+        <th>Points</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in rows %}
+      <tr>
+        <td><span class="rank-badge">#{{ loop.index }}</span></td>
+        <td><a class="result-link table-primary" href="/members/{{ row.member_id }}">{{ row.display_name }}</a></td>
+        <td><span class="points-pill">{{ row.points }} pts</span></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="empty">
+    <strong>No leaderboard results</strong>
+    No leaderboard results for this season.
+  </div>
+  {% endif %}
+</section>
+
+{% if breakdown_rows %}
+<section class="panel archive-panel">
+  <div class="panel-heading">
+    <h2>Scoring breakdown</h2>
+  </div>
+  <table class="record-table">
+    <thead>
+      <tr>
+        <th>Member</th>
+        <th>Competition</th>
+        <th>Placement</th>
+        <th>Formula</th>
+        <th>Total</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in breakdown_rows %}
+      <tr>
+        <td><span class="table-primary">{{ row.member }}</span></td>
+        <td><span class="table-primary">{{ row.competition }}</span></td>
+        <td>
+          <span class="place-badge place-{{ row.place }}">{{ row.place }}{% if row.place == 1 %}st{% elif row.place == 2 %}nd{% elif row.place == 3 %}rd{% else %}th{% endif %}</span>
+          <span class="scope-text">{{ row.scope.replace("_", " ") }}</span>
+        </td>
+        <td>
+          {{ row.breakdown.base_points }} x {{ row.breakdown.placement_multiplier }}
+          + {{ row.breakdown.high_profile_bonus }},
+          then x {{ row.breakdown.competition_weight }}
+        </td>
+        <td><span class="points-pill">{{ row.breakdown.total }} pts</span></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endif %}
+{% endblock %}

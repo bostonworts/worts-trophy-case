@@ -1,0 +1,144 @@
+#!/usr/bin/env sh
+set -eu
+
+project_dir=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+mount_root=${TROPHY_CASE_DEMO_ROOT:-/Users/Shared/Docker/trophy-case-demo}
+app_mount="$mount_root/app"
+postgres_mount="$mount_root/postgres"
+uploads_mount="$mount_root/uploads"
+compose_project=${TROPHY_CASE_DEMO_PROJECT:-trophy-case-demo}
+web_port=${DEMO_WEB_PORT:-8011}
+db_port=${DEMO_DB_PORT:-5444}
+admin_code=${DEMO_ADMIN_CODE:-demo-code}
+app_secret=${DEMO_APP_SECRET_KEY:-dev-demo-secret-change-me}
+
+usage() {
+  cat <<EOF
+Usage: ./bin/docker-demo <command>
+
+Commands:
+  up       Sync code, start a clean demo stack, reset data, and seed demo rows.
+  seed     Reset and seed the running demo stack.
+  logs     Follow demo web logs.
+  status   Show demo containers.
+  down     Stop demo containers and keep demo data.
+  clean    Stop demo containers and remove demo data. Requires --yes.
+
+Defaults:
+  URL:        http://localhost:$web_port
+  Admin:      demo-admin@example.test
+  Admin code: $admin_code
+  Member:     alex-list@example.test
+EOF
+}
+
+compose() {
+  COMPOSE_PROJECT_NAME=$compose_project \
+  TROPHY_CASE_MOUNT_ROOT=$mount_root \
+  WEB_PORT=$web_port \
+  DB_PORT=$db_port \
+  APP_SECRET_KEY=$app_secret \
+  ADMIN_LOGIN_CODE=$admin_code \
+  ADMIN_SETUP_CODE=$admin_code \
+  DATABASE_URL=postgresql+psycopg://trophy:trophy@db:5432/trophy_case \
+  LOCAL_LOGIN_ENABLED=true \
+  SESSION_COOKIE_SECURE=false \
+  docker compose "$@"
+}
+
+sync_app() {
+  mkdir -p "$app_mount" "$postgres_mount" "$uploads_mount"
+  rsync -a --delete \
+    --exclude ".git" \
+    --exclude ".venv" \
+    --exclude "__pycache__" \
+    --exclude ".pytest_cache" \
+    --exclude ".ruff_cache" \
+    "$project_dir"/ "$app_mount"/
+}
+
+wait_for_web() {
+  tries=0
+  until compose exec -T web python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/healthz', timeout=2)" >/dev/null 2>&1
+  do
+    tries=$((tries + 1))
+    if [ "$tries" -ge 60 ]; then
+      echo "Demo web container did not become healthy in time."
+      exit 1
+    fi
+    sleep 1
+  done
+}
+
+seed_demo() {
+  compose exec -T web python -m app.cli reset-data --confirm RESET_DATA
+  compose exec -T web python -m app.cli seed
+}
+
+print_ready() {
+  cat <<EOF
+
+Demo ready:  http://localhost:$web_port
+Admin login: /login
+Admin email: demo-admin@example.test
+Admin code:  $admin_code
+
+Member login: /member-login
+Good member:  alex-list@example.test
+Lapsed member: lapsed-list@example.test
+
+Without SMTP, member login codes are in:
+  ./bin/docker-demo logs
+
+Clean it up with:
+  ./bin/docker-demo clean --yes
+EOF
+}
+
+command=${1:-help}
+case "$command" in
+  up|start)
+    sync_app
+    compose up --build -d
+    wait_for_web
+    seed_demo
+    print_ready
+    ;;
+  seed)
+    sync_app
+    wait_for_web
+    seed_demo
+    print_ready
+    ;;
+  logs)
+    compose logs -f web
+    ;;
+  status|ps)
+    compose ps
+    ;;
+  down|stop)
+    compose down --remove-orphans
+    echo "Demo containers stopped. Data kept at $mount_root."
+    ;;
+  clean)
+    if [ "${2:-}" != "--yes" ]; then
+      echo "This removes demo containers and $mount_root."
+      echo "Run: ./bin/docker-demo clean --yes"
+      exit 1
+    fi
+    compose down --remove-orphans
+    if [ "$mount_root" = "/" ] || [ -z "$mount_root" ]; then
+      echo "Refusing to remove unsafe mount root."
+      exit 1
+    fi
+    rm -rf "$mount_root"
+    echo "Demo containers stopped and demo data removed."
+    ;;
+  help|-h|--help)
+    usage
+    ;;
+  *)
+    usage
+    exit 1
+    ;;
+esac

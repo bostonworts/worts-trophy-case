@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+
+{% block title %}Import Results - Trophy Case{% endblock %}
+
+{% block content %}
+<header class="page-header">
+  <div>
+    <p class="kicker">Archive</p>
+    <h1>Import results</h1>
+  </div>
+  <a class="button-secondary" href="/results">Results</a>
+</header>
+
+<section class="panel auth-panel">
+  {% if errors %}
+  <div class="form-errors">
+    {% for error in errors %}
+    <p>{{ error }}</p>
+    {% endfor %}
+    <p>Use Resolve &amp; Import when the CSV includes enough member, competition, and style context to create missing references.</p>
+  </div>
+  {% endif %}
+  {% if summary %}
+  <div class="notice">{{ summary }}</div>
+  {% endif %}
+  <form method="post" action="/results/import" enctype="multipart/form-data">
+    {% include "_csrf.html" %}
+    <div class="form-grid">
+      <div class="field field-full">
+        <label for="csv_file">CSV file</label>
+        <input id="csv_file" name="csv_file" type="file" accept=".csv,text/csv" required>
+      </div>
+      <div class="field-note field-full">
+        Columns: {{ columns | join(", ") }}
+      </div>
+      <div class="field-note field-full">
+        Placement scopes: {{ placement_scopes | join(", ") }}
+      </div>
+    </div>
+    <div class="form-actions">
+      <div class="inline-actions">
+        <button class="button-secondary" type="submit" name="action" value="preview">Preview CSV</button>
+        <button class="button-secondary" type="submit" name="action" value="resolve">Resolve &amp; Import</button>
+        <button type="submit" name="action" value="import">Import Results</button>
+      </div>
+    </div>
+  </form>
+</section>
+
+{% if preview %}
+<section class="panel import-preview">
+  <div class="panel-heading">
+    <h2>Preview</h2>
+  </div>
+  <div class="preview-summary">
+    <span class="preview-pill">{{ preview.total }} valid rows</span>
+    <span class="preview-pill">{{ preview.creates }} creates</span>
+    <span class="preview-pill">{{ preview.updates }} updates</span>
+    <span class="preview-pill">{{ preview.skips }} skips</span>
+  </div>
+  {% if preview.warnings %}
+  <div class="preview-warnings">
+    {% for warning in preview.warnings %}
+    <p>{{ warning }}</p>
+    {% endfor %}
+  </div>
+  {% endif %}
+  <table>
+    <thead>
+      <tr>
+        <th>Row</th>
+        <th>Action</th>
+        <th>Member</th>
+        <th>Result</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in preview.rows %}
+      <tr>
+        <td>{{ item.row }}</td>
+        <td>{{ item.action|capitalize }}</td>
+        <td>{{ item.label }}</td>
+        <td>{{ item.detail }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endif %}
+{% endblock %}

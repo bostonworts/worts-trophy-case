@@ -1,0 +1,201 @@
+#!/bin/sh
+set -eu
+
+usage() {
+    cat >&2 <<'EOF'
+Usage: bin/prod-restore BACKUP_DIR CONFIRM_HOST
+
+Restore production Postgres and uploads from BACKUP_DIR. CONFIRM_HOST must match
+RESTORE_CONFIRM_HOST, which defaults to trophycase.worts.club.
+
+The script also prompts for: RESTORE <host>
+
+Environment overrides:
+  COMPOSE_FILE          default: compose.prod.yaml
+  DB_SERVICE            default: db
+  WEB_SERVICE           default: web
+  UPLOAD_DIR            default: /uploads
+  PROJECT_DIR           default: parent directory of this script
+  RESTORE_CONFIRM_HOST  default: trophycase.worts.club
+EOF
+}
+
+if [ "${1:-}" = "-h" ] || [ "${1:-}" = "--help" ]; then
+    usage
+    exit 0
+fi
+
+if [ "$#" -ne 2 ]; then
+    usage
+    exit 2
+fi
+
+BACKUP_DIR=$1
+CONFIRM_HOST=$2
+RESTORE_CONFIRM_HOST=${RESTORE_CONFIRM_HOST:-trophycase.worts.club}
+
+case "$BACKUP_DIR" in
+    /*) ;;
+    *)
+        echo "ERROR: BACKUP_DIR must be an absolute path." >&2
+        exit 2
+        ;;
+esac
+
+if [ "$CONFIRM_HOST" != "$RESTORE_CONFIRM_HOST" ]; then
+    echo "ERROR: confirmation host must be '$RESTORE_CONFIRM_HOST'." >&2
+    exit 2
+fi
+
+SCRIPT_DIR=$(CDPATH= cd "$(dirname "$0")" && pwd)
+PROJECT_DIR=${PROJECT_DIR:-$(CDPATH= cd "$SCRIPT_DIR/.." && pwd)}
+COMPOSE_FILE=${COMPOSE_FILE:-compose.prod.yaml}
+DB_SERVICE=${DB_SERVICE:-db}
+WEB_SERVICE=${WEB_SERVICE:-web}
+UPLOAD_DIR=${UPLOAD_DIR:-/uploads}
+
+POSTGRES_DUMP="$BACKUP_DIR/postgres.dump"
+UPLOADS_ARCHIVE="$BACKUP_DIR/uploads.tar.gz"
+
+cd "$PROJECT_DIR"
+
+if ! command -v docker >/dev/null 2>&1; then
+    echo "ERROR: docker is required." >&2
+    exit 1
+fi
+
+if ! command -v tar >/dev/null 2>&1; then
+    echo "ERROR: tar is required on the host for backup validation." >&2
+    exit 1
+fi
+
+if [ ! -f "$COMPOSE_FILE" ]; then
+    echo "ERROR: missing compose file: $PROJECT_DIR/$COMPOSE_FILE" >&2
+    exit 1
+fi
+
+if [ ! -d "$BACKUP_DIR" ]; then
+    echo "ERROR: backup directory does not exist: $BACKUP_DIR" >&2
+    exit 1
+fi
+
+if [ ! -s "$POSTGRES_DUMP" ]; then
+    echo "ERROR: missing or empty Postgres dump: $POSTGRES_DUMP" >&2
+    exit 1
+fi
+
+if [ ! -s "$UPLOADS_ARCHIVE" ]; then
+    echo "ERROR: missing or empty uploads archive: $UPLOADS_ARCHIVE" >&2
+    exit 1
+fi
+
+case "$UPLOAD_DIR" in
+    /uploads|/uploads/*) ;;
+    *)
+        echo "ERROR: refusing to restore uploads outside /uploads: $UPLOAD_DIR" >&2
+        exit 2
+        ;;
+esac
+
+docker compose -f "$COMPOSE_FILE" version >/dev/null
+
+compose() {
+    docker compose -f "$COMPOSE_FILE" "$@"
+}
+
+if [ -f "$BACKUP_DIR/SHA256SUMS" ]; then
+    echo "Verifying checksums"
+    if command -v sha256sum >/dev/null 2>&1; then
+        (cd "$BACKUP_DIR" && sha256sum -c SHA256SUMS)
+    elif command -v shasum >/dev/null 2>&1; then
+        (cd "$BACKUP_DIR" && shasum -a 256 -c SHA256SUMS)
+    else
+        echo "WARN: no checksum tool found; skipping SHA256SUMS verification." >&2
+    fi
+fi
+
+echo "Validating uploads archive"
+tar -tzf "$UPLOADS_ARCHIVE" >/dev/null
+if ! tar -tzf "$UPLOADS_ARCHIVE" | while IFS= read -r entry; do
+    case "$entry" in
+        /*|../*|*/../*|..|*/..)
+            echo "ERROR: unsafe path in uploads archive: $entry" >&2
+            exit 1
+            ;;
+    esac
+done
+then
+    exit 1
+fi
+
+if [ ! -r /dev/tty ]; then
+    echo "ERROR: restore confirmation requires a terminal." >&2
+    exit 2
+fi
+
+echo "This will replace Postgres and uploads for $RESTORE_CONFIRM_HOST." >/dev/tty
+echo "Backup directory: $BACKUP_DIR" >/dev/tty
+printf "Type 'RESTORE %s' to continue: " "$RESTORE_CONFIRM_HOST" >/dev/tty
+IFS= read -r ANSWER </dev/tty
+
+if [ "$ANSWER" != "RESTORE $RESTORE_CONFIRM_HOST" ]; then
+    echo "Restore cancelled." >&2
+    exit 2
+fi
+
+echo "Stopping web service"
+compose stop "$WEB_SERVICE"
+
+echo "Restoring Postgres"
+compose exec -T "$DB_SERVICE" sh -ec '
+    pg_restore \
+        --clean \
+        --if-exists \
+        --no-owner \
+        --no-acl \
+        --dbname="${POSTGRES_DB:?POSTGRES_DB is not set}" \
+        --username="${POSTGRES_USER:?POSTGRES_USER is not set}"
+' < "$POSTGRES_DUMP"
+
+echo "Restoring uploads"
+compose run --rm -T --no-deps "$WEB_SERVICE" sh -ec '
+    upload_dir=${1:?upload dir is required}
+    case "$upload_dir" in
+        ""|"/")
+            echo "ERROR: unsafe upload directory: $upload_dir" >&2
+            exit 1
+            ;;
+        /*) ;;
+        *)
+            echo "ERROR: upload directory must be absolute: $upload_dir" >&2
+            exit 1
+            ;;
+    esac
+
+    if [ ! -d "$upload_dir" ]; then
+        mkdir -p "$upload_dir"
+    fi
+
+    tmp_dir="$upload_dir/.prod-restore.$$"
+    rm -rf "$tmp_dir"
+    mkdir "$tmp_dir"
+    tar -C "$tmp_dir" -xzf -
+
+    for path in "$upload_dir"/* "$upload_dir"/.[!.]* "$upload_dir"/..?*; do
+        [ -e "$path" ] || continue
+        [ "$path" = "$tmp_dir" ] && continue
+        rm -rf "$path"
+    done
+
+    for path in "$tmp_dir"/* "$tmp_dir"/.[!.]* "$tmp_dir"/..?*; do
+        [ -e "$path" ] || continue
+        mv "$path" "$upload_dir"/
+    done
+
+    rmdir "$tmp_dir"
+' sh "$UPLOAD_DIR" < "$UPLOADS_ARCHIVE"
+
+echo "Starting web service"
+compose up -d "$WEB_SERVICE"
+
+echo "Restore complete for $RESTORE_CONFIRM_HOST"

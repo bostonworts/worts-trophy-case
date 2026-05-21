@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block title %}{{ page_title }} - Trophy Case{% endblock %}
+
+{% block content %}
+<header class="page-header">
+  <div>
+    <p class="kicker">Competitions</p>
+    <h1>{{ page_heading }}</h1>
+  </div>
+</header>
+
+<form class="panel" method="post" action="{{ form_action }}">
+  {% include "_csrf.html" %}
+  {% if errors %}
+  <div class="form-errors" role="alert">
+    {% for error in errors %}
+    <p>{{ error }}</p>
+    {% endfor %}
+  </div>
+  {% endif %}
+  <div class="form-grid">
+    <div class="field field-full">
+      <label for="name">Name</label>
+      <input id="name" name="name" value="{{ form.get('name', '') }}" required>
+    </div>
+    <div class="field">
+      <label for="date">Date</label>
+      <input id="date" name="date" type="date" value="{{ form.get('date', '') }}" required>
+    </div>
+    <div class="field">
+      <label for="competition_type">Type</label>
+      <select id="competition_type" name="competition_type" required>
+        {% for type in competition_types %}
+        <option value="{{ type.value }}" {% if form.get('competition_type') == type.value %}selected{% endif %}>{{ type.value.replace("_", " ").title() }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="field field-full">
+      <label for="url">URL</label>
+      <input id="url" name="url" type="url" value="{{ form.get('url', '') }}">
+    </div>
+  </div>
+  <div class="form-actions">
+    <button type="submit">{{ submit_label }}</button>
+  </div>
+</form>
+{% endblock %}

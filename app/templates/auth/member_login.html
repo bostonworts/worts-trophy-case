@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+
+{% block title %}Member Login - Trophy Case{% endblock %}
+
+{% block content %}
+<header class="page-header">
+  <div>
+    <p class="kicker">Members</p>
+    <h1>Login</h1>
+  </div>
+  <a class="button-secondary" href="/login">Admin Login</a>
+</header>
+
+<section class="panel auth-panel">
+  {% if errors %}
+  <div class="form-errors" role="alert">
+    {% for error in errors %}
+    <p>{{ error }}</p>
+    {% endfor %}
+  </div>
+  {% endif %}
+  {% if summary %}
+  <div class="notice">{{ summary }}</div>
+  {% endif %}
+
+  <form method="post" action="/member-login">
+    {% include "_csrf.html" %}
+    <div class="form-grid">
+      <div class="field field-full">
+        <label for="email">Email</label>
+        <input id="email" name="email" type="email" value="{{ email }}" required autofocus>
+        <input name="next" type="hidden" value="{{ next_url }}">
+      </div>
+    </div>
+    <div class="form-actions">
+      <button type="submit">Send Login Email</button>
+    </div>
+  </form>
+
+  {% if code_requested %}
+  <form method="post" action="/member-login/verify">
+    {% include "_csrf.html" %}
+    <div class="form-grid">
+      <div class="field field-full">
+        <label for="login_code">Login Code</label>
+        <input id="login_code" name="login_code" inputmode="numeric" autocomplete="one-time-code" required>
+        <input name="email" type="hidden" value="{{ email }}">
+        <input name="next" type="hidden" value="{{ next_url }}">
+      </div>
+    </div>
+    <div class="form-actions">
+      <button type="submit">Verify Code</button>
+    </div>
+  </form>
+  {% endif %}
+</section>
+{% endblock %}

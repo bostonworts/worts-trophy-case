@@ -1,0 +1,149 @@
+#!/bin/sh
+set -eu
+
+usage() {
+    cat >&2 <<'EOF'
+Usage: bin/prod-backup BACKUP_ROOT
+
+Create a timestamped production backup directory containing:
+  postgres.dump   Postgres custom-format dump from the db service
+  uploads.tar.gz  Archive of the web service upload directory
+  manifest.txt    Backup metadata
+  SHA256SUMS      Checksums when sha256sum or shasum is available
+
+Environment overrides:
+  COMPOSE_FILE  default: compose.prod.yaml
+  DB_SERVICE    default: db
+  WEB_SERVICE   default: web
+  UPLOAD_DIR    default: /uploads
+  PROJECT_DIR   default: parent directory of this script
+
+The web service is stopped during the dump and upload archive so database rows
+and uploaded files are captured from the same quiet point in time.
+EOF
+}
+
+if [ "${1:-}" = "-h" ] || [ "${1:-}" = "--help" ]; then
+    usage
+    exit 0
+fi
+
+if [ "$#" -ne 1 ]; then
+    usage
+    exit 2
+fi
+
+BACKUP_ROOT=$1
+case "$BACKUP_ROOT" in
+    /*) ;;
+    *)
+        echo "ERROR: BACKUP_ROOT must be an absolute path." >&2
+        exit 2
+        ;;
+esac
+
+SCRIPT_DIR=$(CDPATH= cd "$(dirname "$0")" && pwd)
+PROJECT_DIR=${PROJECT_DIR:-$(CDPATH= cd "$SCRIPT_DIR/.." && pwd)}
+COMPOSE_FILE=${COMPOSE_FILE:-compose.prod.yaml}
+DB_SERVICE=${DB_SERVICE:-db}
+WEB_SERVICE=${WEB_SERVICE:-web}
+UPLOAD_DIR=${UPLOAD_DIR:-/uploads}
+WEB_STOPPED=0
+
+cd "$PROJECT_DIR"
+
+if ! command -v docker >/dev/null 2>&1; then
+    echo "ERROR: docker is required." >&2
+    exit 1
+fi
+
+if [ ! -f "$COMPOSE_FILE" ]; then
+    echo "ERROR: missing compose file: $PROJECT_DIR/$COMPOSE_FILE" >&2
+    exit 1
+fi
+
+docker compose -f "$COMPOSE_FILE" version >/dev/null
+
+compose() {
+    docker compose -f "$COMPOSE_FILE" "$@"
+}
+
+restart_web_if_needed() {
+    if [ "$WEB_STOPPED" = "1" ]; then
+        echo "Starting web service"
+        compose up -d "$WEB_SERVICE"
+        WEB_STOPPED=0
+    fi
+}
+
+if [ -z "$(compose ps -q "$DB_SERVICE" 2>/dev/null)" ]; then
+    echo "ERROR: db service '$DB_SERVICE' is not running or is not known to $COMPOSE_FILE." >&2
+    exit 1
+fi
+
+if [ -z "$(compose ps -q "$WEB_SERVICE" 2>/dev/null)" ]; then
+    echo "ERROR: web service '$WEB_SERVICE' is not running or is not known to $COMPOSE_FILE." >&2
+    exit 1
+fi
+
+mkdir -p "$BACKUP_ROOT"
+chmod 700 "$BACKUP_ROOT" 2>/dev/null || true
+
+STAMP=$(date -u +"%Y%m%dT%H%M%SZ")
+BACKUP_DIR="$BACKUP_ROOT/trophy-case-$STAMP"
+COUNT=1
+while [ -e "$BACKUP_DIR" ]; do
+    BACKUP_DIR="$BACKUP_ROOT/trophy-case-$STAMP-$COUNT"
+    COUNT=$((COUNT + 1))
+done
+
+mkdir "$BACKUP_DIR"
+chmod 700 "$BACKUP_DIR" 2>/dev/null || true
+
+trap restart_web_if_needed EXIT INT TERM
+
+echo "Stopping web service for a consistent backup"
+compose stop "$WEB_SERVICE"
+WEB_STOPPED=1
+
+echo "Writing Postgres dump to $BACKUP_DIR/postgres.dump"
+compose exec -T "$DB_SERVICE" sh -ec '
+    pg_dump \
+        --format=custom \
+        --clean \
+        --if-exists \
+        --no-owner \
+        --no-acl \
+        --dbname="${POSTGRES_DB:?POSTGRES_DB is not set}" \
+        --username="${POSTGRES_USER:?POSTGRES_USER is not set}"
+' > "$BACKUP_DIR/postgres.dump"
+
+echo "Writing uploads archive to $BACKUP_DIR/uploads.tar.gz"
+compose run --rm -T --no-deps "$WEB_SERVICE" sh -ec '
+    upload_dir=${1:?upload dir is required}
+    if [ ! -d "$upload_dir" ]; then
+        echo "ERROR: upload directory does not exist: $upload_dir" >&2
+        exit 1
+    fi
+    tar -C "$upload_dir" -czf - .
+' sh "$UPLOAD_DIR" > "$BACKUP_DIR/uploads.tar.gz"
+
+{
+    echo "created_utc=$STAMP"
+    echo "project_dir=$PROJECT_DIR"
+    echo "compose_file=$COMPOSE_FILE"
+    echo "db_service=$DB_SERVICE"
+    echo "web_service=$WEB_SERVICE"
+    echo "upload_dir=$UPLOAD_DIR"
+} > "$BACKUP_DIR/manifest.txt"
+
+if command -v sha256sum >/dev/null 2>&1; then
+    (cd "$BACKUP_DIR" && sha256sum postgres.dump uploads.tar.gz manifest.txt > SHA256SUMS)
+elif command -v shasum >/dev/null 2>&1; then
+    (cd "$BACKUP_DIR" && shasum -a 256 postgres.dump uploads.tar.gz manifest.txt > SHA256SUMS)
+fi
+
+restart_web_if_needed
+trap - EXIT INT TERM
+
+echo "Backup complete: $BACKUP_DIR"

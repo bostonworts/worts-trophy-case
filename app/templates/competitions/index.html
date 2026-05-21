@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+
+{% block title %}Competitions - Trophy Case{% endblock %}
+
+{% block content %}
+<header class="page-header">
+  <div>
+    <p class="kicker">Competitions</p>
+    <h1>Competition calendar</h1>
+  </div>
+  {% if request.state.current_member and request.state.current_member.is_admin %}
+  <div class="inline-actions">
+    <a class="button-secondary" href="/competitions.csv">Export CSV</a>
+    <a class="button-secondary" href="/competitions/import">Import CSV</a>
+    <a class="button" href="/competitions/new">Add Competition</a>
+  </div>
+  {% endif %}
+</header>
+
+<section class="panel">
+  {% if active_competitions %}
+  <table>
+    <thead>
+      <tr>
+        <th>Date</th>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Link</th>
+        {% if request.state.current_member and request.state.current_member.is_admin %}
+        <th></th>
+        {% endif %}
+      </tr>
+    </thead>
+    <tbody>
+      {% for competition in active_competitions %}
+      <tr>
+        <td>{{ competition.date.isoformat() }}</td>
+        <td><a class="result-link" href="/competitions/{{ competition.id }}">{{ competition.name }}</a></td>
+        <td>{{ competition.competition_type.value.replace("_", " ").title() }}</td>
+        <td>
+          {% if competition.url %}
+          <a href="{{ competition.url }}">{{ competition.url }}</a>
+          {% else %}
+          <span class="muted">None</span>
+          {% endif %}
+        </td>
+        {% if request.state.current_member and request.state.current_member.is_admin %}
+          <td class="table-action">
+            <div class="inline-actions">
+              <a class="button-secondary" href="/competitions/{{ competition.id }}/edit">Edit</a>
+              <form method="post" action="/competitions/{{ competition.id }}/archive">
+                {% include "_csrf.html" %}
+                <button class="button-secondary" type="submit">Archive</button>
+              </form>
+            </div>
+          </td>
+        {% endif %}
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="empty">No competitions yet.</div>
+  {% endif %}
+</section>
+
+{% if archived_competitions %}
+<section class="panel archive-panel">
+  <div class="panel-heading">
+    <h2>Archived competitions</h2>
+  </div>
+  <table>
+    <thead>
+      <tr>
+        <th>Date</th>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Archived</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for competition in archived_competitions %}
+      <tr>
+        <td>{{ competition.date.isoformat() }}</td>
+        <td><a class="result-link" href="/competitions/{{ competition.id }}">{{ competition.name }}</a></td>
+        <td>{{ competition.competition_type.value.replace("_", " ").title() }}</td>
+        <td>{{ competition.archived_at.date().isoformat() }}</td>
+        <td class="table-action">
+          <div class="inline-actions">
+            <a class="button-secondary" href="/competitions/{{ competition.id }}/edit">Edit</a>
+            <form method="post" action="/competitions/{{ competition.id }}/restore">
+              {% include "_csrf.html" %}
+              <button class="button-secondary" type="submit">Restore</button>
+            </form>
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endif %}
+{% endblock %}

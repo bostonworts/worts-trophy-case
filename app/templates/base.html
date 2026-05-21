@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}Trophy Case{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', path='styles.css') }}">
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="topbar-inner">
+        <a class="brand" href="/results">Trophy Case</a>
+        <nav class="nav" aria-label="Primary">
+          <a href="/results">Results</a>
+          <a href="/competitions">Competitions</a>
+          <a href="/styles">Styles</a>
+          {% if request.state.current_member and request.state.current_member.is_admin %}
+          <a href="/admin">Admin</a>
+          <a href="/members">Members</a>
+          {% endif %}
+          <a href="/leaderboard">Leaderboard</a>
+          {% if request.state.current_member %}
+          <a href="/me">My Profile</a>
+          <form method="post" action="/logout">
+            {% include "_csrf.html" %}
+            <button class="nav-button" type="submit">Logout</button>
+          </form>
+          {% else %}
+          <a href="/member-login">Member Login</a>
+          <a href="/login">Admin Login</a>
+          {% endif %}
+        </nav>
+      </div>
+    </header>
+    <main class="page">
+      {% block content %}{% endblock %}
+    </main>
+  </body>
+</html>

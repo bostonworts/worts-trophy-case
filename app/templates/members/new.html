@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block title %}{{ page_title }} - Trophy Case{% endblock %}
+
+{% block content %}
+<header class="page-header">
+  <div>
+    <p class="kicker">Roster</p>
+    <h1>{{ page_heading }}</h1>
+  </div>
+</header>
+
+<form class="panel" method="post" action="{{ form_action }}">
+  {% include "_csrf.html" %}
+  {% if errors %}
+  <div class="form-errors" role="alert">
+    {% for error in errors %}
+    <p>{{ error }}</p>
+    {% endfor %}
+  </div>
+  {% endif %}
+  <div class="form-grid">
+    <div class="field">
+      <label for="display_name">Display Name</label>
+      <input id="display_name" name="display_name" value="{{ form.get('display_name', '') }}" required>
+    </div>
+    <div class="field">
+      <label for="email">Email</label>
+      <input id="email" name="email" type="email" value="{{ form.get('email', '') }}" required>
+    </div>
+    <div class="field">
+      <label for="paypal_email">PayPal Email</label>
+      <input id="paypal_email" name="paypal_email" type="email" value="{{ form.get('paypal_email', '') }}">
+    </div>
+    <div class="field">
+      <label for="mailing_list_email">List Email</label>
+      <input id="mailing_list_email" name="mailing_list_email" type="email" value="{{ form.get('mailing_list_email', '') }}">
+    </div>
+    <div class="field checkbox-field">
+      <input id="good_standing" name="good_standing" type="checkbox" value="true" {% if form.get('good_standing', 'true') %}checked{% endif %}>
+      <label for="good_standing">Member in good standing</label>
+    </div>
+    <div class="field field-full checkbox-field">
+      <input id="is_admin" name="is_admin" type="checkbox" value="true" {% if form.get('is_admin') %}checked{% endif %}>
+      <label for="is_admin">Admin</label>
+    </div>
+  </div>
+  <div class="form-actions">
+    <button type="submit">{{ submit_label }}</button>
+  </div>
+</form>
+{% endblock %}

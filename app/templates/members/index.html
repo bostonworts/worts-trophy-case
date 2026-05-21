@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+
+{% block title %}Members - Trophy Case{% endblock %}
+
+{% block content %}
+<header class="page-header">
+  <div>
+    <p class="kicker">Roster</p>
+    <h1>Members</h1>
+  </div>
+  <div class="inline-actions">
+    <a class="button-secondary" href="/members.csv">Export CSV</a>
+    <a class="button-secondary" href="/members/import">Import Roster</a>
+    <a class="button" href="/members/new">Add Member</a>
+  </div>
+</header>
+
+<section class="panel">
+  {% if member_rows %}
+  <table>
+    <thead>
+      <tr>
+        <th>Member</th>
+        <th>Email</th>
+        <th>Roster Emails</th>
+        <th>Role</th>
+        <th>Results</th>
+        <th>Status</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in member_rows %}
+      <tr>
+        <td><a class="result-link" href="/members/{{ row.member.id }}">{{ row.member.display_name }}</a></td>
+        <td><a href="mailto:{{ row.member.email }}">{{ row.member.email }}</a></td>
+        <td>
+          <div class="table-secondary">
+            {% for email in row.member.emails %}
+              {% if email.kind.value != "primary" %}
+              <div>{{ email.kind.value.replace("_", " ") }}: {{ email.email }}</div>
+              {% endif %}
+            {% endfor %}
+          </div>
+        </td>
+        <td>{% if row.member.is_admin %}Admin{% else %}Member{% endif %}</td>
+        <td>{{ row.result_count }}</td>
+        <td>
+          {% if row.member.deactivated_at %}Inactive
+          {% elif row.member.good_standing %}Good standing
+          {% else %}Not in good standing
+          {% endif %}
+        </td>
+        <td class="table-action">
+          <div class="inline-actions">
+            <a class="button-secondary" href="/members/{{ row.member.id }}/edit">Edit</a>
+          {% if not row.member.deactivated_at %}
+            <form method="post" action="/members/{{ row.member.id }}/deactivate">
+              {% include "_csrf.html" %}
+              <button class="button-secondary" type="submit">Deactivate</button>
+            </form>
+          {% else %}
+            <form method="post" action="/members/{{ row.member.id }}/reactivate">
+              {% include "_csrf.html" %}
+              <button class="button-secondary" type="submit">Reactivate</button>
+            </form>
+          {% endif %}
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="empty">No members yet.</div>
+  {% endif %}
+</section>
+{% endblock %}

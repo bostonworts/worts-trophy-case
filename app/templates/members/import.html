@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+
+{% block title %}Import Members - Trophy Case{% endblock %}
+
+{% block content %}
+<header class="page-header">
+  <div>
+    <p class="kicker">Roster</p>
+    <h1>Import members</h1>
+  </div>
+  <a class="button-secondary" href="/members">Members</a>
+</header>
+
+<section class="panel auth-panel">
+  {% if errors %}
+  <div class="form-errors">
+    {% for error in errors %}
+    <p>{{ error }}</p>
+    {% endfor %}
+  </div>
+  {% endif %}
+  {% if summary %}
+  <div class="notice">{{ summary }}</div>
+  {% endif %}
+  <form method="post" action="/members/import" enctype="multipart/form-data">
+    {% include "_csrf.html" %}
+    <div class="form-grid">
+      <div class="field field-full">
+        <label for="csv_file">CSV file</label>
+        <input id="csv_file" name="csv_file" type="file" accept=".csv,text/csv">
+      </div>
+      <div class="field field-full">
+        <label for="google_sheet_url">Google Sheets URL</label>
+        <input id="google_sheet_url" name="google_sheet_url" type="url" placeholder="https://docs.google.com/spreadsheets/d/...">
+      </div>
+      <div class="field-note field-full">
+        Use either a CSV file or a Google Sheets URL. Columns: {{ columns | join(", ") }}
+      </div>
+    </div>
+    <div class="form-actions">
+      <div class="inline-actions">
+        <button class="button-secondary" type="submit" name="action" value="preview">Preview CSV</button>
+        <button type="submit" name="action" value="import">Import Members</button>
+      </div>
+    </div>
+  </form>
+</section>
+
+{% if preview %}
+<section class="panel import-preview">
+  <div class="panel-heading">
+    <h2>Preview</h2>
+  </div>
+  <div class="preview-summary">
+    <span class="preview-pill">{{ preview.total }} valid rows</span>
+    <span class="preview-pill">{{ preview.creates }} creates</span>
+    <span class="preview-pill">{{ preview.updates }} updates</span>
+    <span class="preview-pill">{{ preview.skips }} skips</span>
+  </div>
+  <table>
+    <thead>
+      <tr>
+        <th>Row</th>
+        <th>Action</th>
+        <th>Member</th>
+        <th>Email</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in preview.rows %}
+      <tr>
+        <td>{{ item.row }}</td>
+        <td>{{ item.action|capitalize }}</td>
+        <td>{{ item.label }}</td>
+        <td>{{ item.detail }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endif %}
+{% endblock %}

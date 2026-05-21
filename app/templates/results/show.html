@@ -1,0 +1,176 @@
+{% extends "base.html" %}
+
+{% block title %}{{ result.member.display_name }} - Trophy Case{% endblock %}
+
+{% block content %}
+<header class="page-header">
+  <div>
+    <p class="kicker">Result</p>
+    <h1><a class="plain-heading-link" href="/members/{{ result.member.id }}">{{ result.member.display_name }}</a></h1>
+    <p class="lede"><a href="/competitions/{{ result.competition.id }}">{{ result.competition.name }}</a> &middot; {{ result.style_subcategory.code }} {{ result.style_subcategory.name }}</p>
+  </div>
+  <div class="inline-actions">
+    {% if request.state.current_member and request.state.current_member.is_admin %}
+    <a class="button-secondary" href="/results/{{ result.id }}/edit">Edit</a>
+      {% if result.archived_at %}
+      <form method="post" action="/results/{{ result.id }}/restore">
+        {% include "_csrf.html" %}
+        <button class="button-secondary" type="submit">Restore</button>
+      </form>
+      {% elif not result.competition.archived_at %}
+      <form method="post" action="/results/{{ result.id }}/archive">
+        {% include "_csrf.html" %}
+        <button class="button-secondary" type="submit">Archive</button>
+      </form>
+      {% endif %}
+    {% endif %}
+  </div>
+</header>
+
+{% if result.archived_at %}
+<div class="notice">This result is archived.</div>
+{% elif result.competition.archived_at %}
+<div class="notice">This result is hidden because its competition is archived.</div>
+{% endif %}
+
+<section class="panel detail-panel">
+  <div class="detail-grid">
+    <div class="detail-section">
+      <h2>Competition</h2>
+      <dl class="detail-list">
+        <div>
+          <dt>Name</dt>
+          <dd><a href="/competitions/{{ result.competition.id }}">{{ result.competition.name }}</a></dd>
+        </div>
+        {% if result.competition.url %}
+        <div>
+          <dt>Website</dt>
+          <dd><a href="{{ result.competition.url }}">{{ result.competition.url }}</a></dd>
+        </div>
+        {% endif %}
+        <div>
+          <dt>Date</dt>
+          <dd>{{ result.competition.date.isoformat() }}</dd>
+        </div>
+        <div>
+          <dt>Type</dt>
+          <dd>{{ result.competition.competition_type.value.replace("_", " ") }}</dd>
+        </div>
+      </dl>
+    </div>
+
+    <div class="detail-section">
+      <h2>Style</h2>
+      <dl class="detail-list">
+        <div>
+          <dt>Subcategory</dt>
+          <dd><a href="/styles/subcategories/{{ result.style_subcategory.id }}">{{ result.style_subcategory.code }} {{ result.style_subcategory.name }}</a></dd>
+        </div>
+        <div>
+          <dt>Category</dt>
+          <dd><a href="/styles/{{ result.style_subcategory.category.id }}">{{ result.style_subcategory.category.code }} {{ result.style_subcategory.category.name }}</a></dd>
+        </div>
+        <div>
+          <dt>Guidelines</dt>
+          <dd>{{ result.style_subcategory.category.guide_year }}</dd>
+        </div>
+      </dl>
+    </div>
+
+    <div class="detail-section">
+      <h2>Placement</h2>
+      <dl class="detail-list">
+        <div>
+          <dt>BJCP score</dt>
+          <dd>{{ result.bjcp_score or "Not recorded" }}</dd>
+        </div>
+        <div>
+          <dt>Place</dt>
+          <dd>
+            {% if result.place %}
+            {{ result.place }} in {{ result.placement_scope.value.replace("_", " ") }}
+            {% else %}
+            Not placed
+            {% endif %}
+          </dd>
+        </div>
+        <div>
+          <dt>Leaderboard points</dt>
+          <dd>{{ points }}</dd>
+        </div>
+        <div>
+          <dt>Scoring explanation</dt>
+          <dd>
+            {% if breakdown.eligible %}
+            Base {{ breakdown.base_points }} x {{ breakdown.placement_multiplier }}
+            + bonus {{ breakdown.high_profile_bonus }},
+            then x weight {{ breakdown.competition_weight }}.
+            {% else %}
+            {{ breakdown.reason }}
+            {% endif %}
+          </dd>
+        </div>
+      </dl>
+    </div>
+
+    <div class="detail-section">
+      <h2>Attachments</h2>
+      <div class="attachment-list detail-attachments">
+        {% if result.recipe_url %}
+        <a href="{{ result.recipe_url }}">Recipe URL</a>
+        {% endif %}
+        {% if result.recipe_file_url %}
+        <a href="{{ result.recipe_file_url }}">Recipe file</a>
+        {% endif %}
+        {% if result.photo_url %}
+        <a href="{{ result.photo_url }}">Photo</a>
+        {% endif %}
+        {% if not result.recipe_url and not result.recipe_file_url and not result.photo_url %}
+        <span class="muted">None</span>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  {% if result.notes %}
+  <div class="detail-notes">
+    <h2>Notes</h2>
+    <p>{{ result.notes }}</p>
+  </div>
+  {% endif %}
+
+  {% if result.photo_url %}
+  <div class="result-photo-wrap">
+    <img class="result-photo" src="{{ result.photo_url }}" alt="{{ result.member.display_name }} entry photo">
+  </div>
+  {% endif %}
+</section>
+
+{% if audit_entries %}
+<section class="panel archive-panel">
+  <div class="panel-heading">
+    <h2>Change history</h2>
+  </div>
+  <table>
+    <thead>
+      <tr>
+        <th>When</th>
+        <th>Actor</th>
+        <th>Action</th>
+        <th>Summary</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for entry in audit_entries %}
+      <tr>
+        <td>{{ entry.created_at.strftime("%Y-%m-%d %H:%M") }}</td>
+        <td>{% if entry.actor %}{{ entry.actor.display_name }}{% else %}System{% endif %}</td>
+        <td>{{ entry.action }}</td>
+        <td>{{ entry.summary }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endif %}
+{% endblock %}

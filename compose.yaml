@@ -1,0 +1,46 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: trophy_case
+      POSTGRES_USER: trophy
+      POSTGRES_PASSWORD: trophy
+    ports:
+      - "${DB_PORT:-5433}:5432"
+    volumes:
+      - ${TROPHY_CASE_MOUNT_ROOT:-/Users/Shared/Docker/trophy-case}/postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U trophy -d trophy_case"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  web:
+    build:
+      context: .
+      target: dev
+    environment:
+      APP_SECRET_KEY: ${APP_SECRET_KEY:-dev-secret-change-me}
+      ADMIN_LOGIN_CODE: ${ADMIN_LOGIN_CODE:-}
+      ADMIN_SETUP_CODE: ${ADMIN_SETUP_CODE:-}
+      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://trophy:trophy@db:5432/trophy_case}
+      LOCAL_LOGIN_ENABLED: ${LOCAL_LOGIN_ENABLED:-true}
+      SESSION_COOKIE_SECURE: ${SESSION_COOKIE_SECURE:-false}
+      UPLOAD_DIR: ${UPLOAD_DIR:-/uploads}
+      UPLOAD_URL_PREFIX: ${UPLOAD_URL_PREFIX:-/uploads}
+    ports:
+      - "${WEB_PORT:-8001}:8000"
+    volumes:
+      - ${TROPHY_CASE_MOUNT_ROOT:-/Users/Shared/Docker/trophy-case}/app:/app
+      - ${TROPHY_CASE_MOUNT_ROOT:-/Users/Shared/Docker/trophy-case}/uploads:/uploads
+    depends_on:
+      db:
+        condition: service_healthy
+    command: sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/healthz', timeout=2)"
+      interval: 10s
+      timeout: 3s
+      retries: 10

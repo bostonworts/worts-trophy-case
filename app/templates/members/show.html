@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+
+{% block title %}{{ member.display_name }} - Trophy Case{% endblock %}
+
+{% block content %}
+<header class="page-header">
+  <div>
+    <p class="kicker">Member</p>
+    <h1>{{ member.display_name }}</h1>
+    <p class="lede">{{ stats.result_count }} visible results &middot; {{ stats.points }} leaderboard points</p>
+  </div>
+  <div class="inline-actions">
+    <a class="button-secondary" href="/results?member_id={{ member.id }}">Archive</a>
+    {% if request.state.current_member and request.state.current_member.is_admin %}
+    <a class="button-secondary" href="/members/{{ member.id }}/edit">Edit</a>
+    {% endif %}
+  </div>
+</header>
+
+{% if member.deactivated_at %}
+<div class="notice">This member is inactive.</div>
+{% endif %}
+
+<section class="profile-summary">
+  <article class="summary-card">
+    <span>Visible results</span>
+    <strong>{{ stats.result_count }}</strong>
+  </article>
+  <article class="summary-card">
+    <span>Placed results</span>
+    <strong>{{ stats.placed_count }}</strong>
+  </article>
+  <article class="summary-card">
+    <span>Leaderboard points</span>
+    <strong>{{ stats.points }}</strong>
+  </article>
+  <article class="summary-card">
+    <span>Best BJCP score</span>
+    <strong>{{ stats.best_score }}</strong>
+  </article>
+</section>
+
+<section class="panel archive-panel">
+  <div class="panel-heading">
+    <h2>Results</h2>
+  </div>
+  {% if active_rows %}
+  <table class="record-table">
+    <thead>
+      <tr>
+        <th>Date</th>
+        <th>Competition</th>
+        <th>Style</th>
+        <th>Score</th>
+        <th>Place</th>
+        <th>Points</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in active_rows %}
+      {% set result = row.result %}
+      <tr>
+        <td>
+          <div class="date-stack">
+            <strong>{{ result.competition.date.strftime("%b %d") }}</strong>
+            <span>{{ result.competition.date.year }}</span>
+          </div>
+        </td>
+        <td>
+          <a class="result-link table-primary" href="/competitions/{{ result.competition.id }}">{{ result.competition.name }}</a>
+          <span class="table-secondary">{{ result.competition.competition_type.value.replace("_", " ") }}</span>
+        </td>
+        <td>
+          <a class="style-chip" href="/results/{{ result.id }}">{{ result.style_subcategory.code }} {{ result.style_subcategory.name }}</a>
+          <span class="table-secondary">{{ result.style_subcategory.category.code }} {{ result.style_subcategory.category.name }}</span>
+        </td>
+        <td>{% if result.bjcp_score %}<span class="score-pill">{{ result.bjcp_score }}</span>{% else %}<span class="muted">Not scored</span>{% endif %}</td>
+        <td>
+          {% if result.place %}
+          <span class="place-badge place-{{ result.place }}">{{ result.place }}{% if result.place == 1 %}st{% elif result.place == 2 %}nd{% elif result.place == 3 %}rd{% else %}th{% endif %}</span>
+          <span class="scope-text">{{ result.placement_scope.value.replace("_", " ") }}</span>
+          {% else %}
+          <span class="place-badge place-empty">Unplaced</span>
+          {% endif %}
+        </td>
+        <td><span class="points-pill">{{ row.points }} pts</span></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="empty">
+    <strong>No public results</strong>
+    No public results for this member.
+  </div>
+  {% endif %}
+</section>
+
+{% if archived_rows %}
+<section class="panel archive-panel">
+  <div class="panel-heading">
+    <h2>Hidden results</h2>
+  </div>
+  <table class="record-table">
+    <thead>
+      <tr>
+        <th>Date</th>
+        <th>Competition</th>
+        <th>Style</th>
+        <th>Place</th>
+        <th>Reason</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in archived_rows %}
+      {% set result = row.result %}
+      <tr>
+        <td>
+          <div class="date-stack">
+            <strong>{{ result.competition.date.strftime("%b %d") }}</strong>
+            <span>{{ result.competition.date.year }}</span>
+          </div>
+        </td>
+        <td><a class="result-link table-primary" href="/competitions/{{ result.competition.id }}">{{ result.competition.name }}</a></td>
+        <td><a class="style-chip" href="/results/{{ result.id }}">{{ result.style_subcategory.code }} {{ result.style_subcategory.name }}</a></td>
+        <td>
+          {% if result.place %}
+          <span class="place-badge place-{{ result.place }}">{{ result.place }}{% if result.place == 1 %}st{% elif result.place == 2 %}nd{% elif result.place == 3 %}rd{% else %}th{% endif %}</span>
+          <span class="scope-text">{{ result.placement_scope.value.replace("_", " ") }}</span>
+          {% else %}
+          <span class="place-badge place-empty">Unplaced</span>
+          {% endif %}
+        </td>
+        <td>{{ row.hidden_reason }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endif %}
+{% endblock %}

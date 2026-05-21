@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+
+{% block title %}{{ subcategory.code }} {{ subcategory.name }} - Trophy Case{% endblock %}
+
+{% block content %}
+<header class="page-header">
+  <div>
+    <p class="kicker"><a href="/styles/{{ subcategory.category.id }}">BJCP {{ subcategory.category.code }}</a></p>
+    <h1>{{ subcategory.code }} {{ subcategory.name }}</h1>
+    <p class="lede">{{ stats.result_count }} visible results &middot; {{ stats.points }} leaderboard points</p>
+  </div>
+  <div class="inline-actions">
+    <a class="button-secondary" href="/results?style_subcategory_id={{ subcategory.id }}">Archive</a>
+  </div>
+</header>
+
+<section class="panel detail-panel">
+  <div class="detail-grid">
+    <div class="detail-section">
+      <h2>Style</h2>
+      <dl class="detail-list">
+        <div>
+          <dt>Subcategory</dt>
+          <dd>{{ subcategory.code }} {{ subcategory.name }}</dd>
+        </div>
+        <div>
+          <dt>Category</dt>
+          <dd><a href="/styles/{{ subcategory.category.id }}">{{ subcategory.category.code }} {{ subcategory.category.name }}</a></dd>
+        </div>
+        <div>
+          <dt>Guidelines</dt>
+          <dd>{{ subcategory.category.guide_year }}</dd>
+        </div>
+      </dl>
+    </div>
+    <div class="detail-section">
+      <h2>Results</h2>
+      <dl class="detail-list">
+        <div>
+          <dt>Visible results</dt>
+          <dd>{{ stats.result_count }}</dd>
+        </div>
+        <div>
+          <dt>Placed results</dt>
+          <dd>{{ stats.placed_count }}</dd>
+        </div>
+      </dl>
+    </div>
+    <div class="detail-section">
+      <h2>Performance</h2>
+      <dl class="detail-list">
+        <div>
+          <dt>Leaderboard points</dt>
+          <dd>{{ stats.points }}</dd>
+        </div>
+        <div>
+          <dt>Best BJCP score</dt>
+          <dd>{{ stats.best_score }}</dd>
+        </div>
+      </dl>
+    </div>
+  </div>
+</section>
+
+<section class="panel archive-panel">
+  <div class="panel-heading">
+    <h2>Results</h2>
+  </div>
+  {% if active_rows %}
+  <table>
+    <thead>
+      <tr>
+        <th>Date</th>
+        <th>Member</th>
+        <th>Competition</th>
+        <th>Score</th>
+        <th>Place</th>
+        <th>Points</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in active_rows %}
+      {% set result = row.result %}
+      <tr>
+        <td><a class="result-link" href="/results/{{ result.id }}">{{ result.competition.date.isoformat() }}</a></td>
+        <td><a class="result-link" href="/members/{{ result.member.id }}">{{ result.member.display_name }}</a></td>
+        <td><a class="result-link" href="/competitions/{{ result.competition.id }}">{{ result.competition.name }}</a></td>
+        <td>{{ result.bjcp_score or "" }}</td>
+        <td>
+          {% if result.place %}
+          {{ result.place }} in {{ result.placement_scope.value.replace("_", " ") }}
+          {% else %}
+          <span class="muted">Unplaced</span>
+          {% endif %}
+        </td>
+        <td>{{ row.points }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="empty">No public results for this style.</div>
+  {% endif %}
+</section>
+
+{% if archived_rows %}
+<section class="panel archive-panel">
+  <div class="panel-heading">
+    <h2>Hidden results</h2>
+  </div>
+  <table>
+    <thead>
+      <tr>
+        <th>Date</th>
+        <th>Member</th>
+        <th>Competition</th>
+        <th>Reason</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in archived_rows %}
+      {% set result = row.result %}
+      <tr>
+        <td><a class="result-link" href="/results/{{ result.id }}">{{ result.competition.date.isoformat() }}</a></td>
+        <td><a class="result-link" href="/members/{{ result.member.id }}">{{ result.member.display_name }}</a></td>
+        <td><a class="result-link" href="/competitions/{{ result.competition.id }}">{{ result.competition.name }}</a></td>
+        <td>{{ row.hidden_reason }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endif %}
+{% endblock %}

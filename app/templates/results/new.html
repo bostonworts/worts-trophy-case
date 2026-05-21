@@ -1,0 +1,157 @@
+{% extends "base.html" %}
+
+{% block title %}{{ page_title }} - Trophy Case{% endblock %}
+
+{% block content %}
+<header class="page-header">
+  <div>
+    <p class="kicker">Archive</p>
+    <h1>{{ page_heading }}</h1>
+  </div>
+  <div class="inline-actions">
+    <a class="button-secondary" href="/results">Results</a>
+    <a class="button-secondary" href="/members/new">Add Member</a>
+    <a class="button-secondary" href="/competitions/new">Add Competition</a>
+  </div>
+</header>
+
+<form class="panel" method="post" action="{{ form_action }}" enctype="multipart/form-data">
+  {% include "_csrf.html" %}
+  {% if errors %}
+  <div class="form-errors" role="alert">
+    {% for error in errors %}
+    <p>{{ error }}</p>
+    {% endfor %}
+  </div>
+  {% endif %}
+  <div class="form-grid">
+    <div class="field">
+      <label for="member_filter">Member</label>
+      <input class="choice-filter" id="member_filter" type="search" autocomplete="off" data-controls="member_id">
+      <select id="member_id" name="member_id" required>
+        <option value="" {% if not form.get('member_id') %}selected{% endif %}>Choose member</option>
+        {% for member in members %}
+        <option value="{{ member.id }}" data-search="{{ member.display_name }} {{ member.email }}" {% if form.get('member_id') == member.id|string %}selected{% endif %}>
+          {{ member.display_name }} - {{ member.email }}
+        </option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="field">
+      <label for="competition_filter">Competition</label>
+      <input class="choice-filter" id="competition_filter" type="search" autocomplete="off" data-controls="competition_id">
+      <select id="competition_id" name="competition_id" required>
+        <option value="" {% if not form.get('competition_id') %}selected{% endif %}>Choose competition</option>
+        {% for competition in competitions %}
+        <option value="{{ competition.id }}" data-search="{{ competition.date.isoformat() }} {{ competition.name }}" {% if form.get('competition_id') == competition.id|string %}selected{% endif %}>
+          {{ competition.date.isoformat() }} - {{ competition.name }}
+        </option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="field field-full">
+      <label for="style_filter">Style</label>
+      <input class="choice-filter" id="style_filter" type="search" autocomplete="off" data-controls="style_subcategory_id">
+      <select id="style_subcategory_id" name="style_subcategory_id" required>
+        <option value="" {% if not form.get('style_subcategory_id') %}selected{% endif %}>Choose style</option>
+        {% for subcategory in subcategories %}
+        <option value="{{ subcategory.id }}" data-search="{{ subcategory.category.guide_year }} {{ subcategory.category.code }} {{ subcategory.category.name }} {{ subcategory.code }} {{ subcategory.name }}" {% if form.get('style_subcategory_id') == subcategory.id|string %}selected{% endif %}>
+          {{ subcategory.category.guide_year }} {{ subcategory.category.code }} / {{ subcategory.code }} {{ subcategory.name }}
+        </option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="field">
+      <label for="bjcp_score">BJCP Score</label>
+      <input id="bjcp_score" name="bjcp_score" type="number" min="0.1" max="50" step="0.1" value="{{ form.get('bjcp_score', '') }}">
+    </div>
+    <div class="field">
+      <label for="place">Place</label>
+      <select id="place" name="place" data-placement-place>
+        <option value="" {% if not form.get('place') %}selected{% endif %}>Unplaced</option>
+        <option value="1" {% if form.get('place') == '1' %}selected{% endif %}>1st</option>
+        <option value="2" {% if form.get('place') == '2' %}selected{% endif %}>2nd</option>
+        <option value="3" {% if form.get('place') == '3' %}selected{% endif %}>3rd</option>
+        <option value="4" {% if form.get('place') == '4' %}selected{% endif %}>4th</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="placement_scope">Placement Scope</label>
+      <select id="placement_scope" name="placement_scope" data-placement-scope>
+        <option value="" {% if not form.get('placement_scope') %}selected{% endif %}>None</option>
+        {% for scope in placement_scopes %}
+        <option value="{{ scope.value }}" {% if form.get('placement_scope') == scope.value %}selected{% endif %}>{{ scope.value.replace("_", " ").title() }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="field">
+      <label for="recipe_url">Recipe URL</label>
+      <input id="recipe_url" name="recipe_url" type="url" value="{{ form.get('recipe_url', '') }}">
+    </div>
+    <div class="field">
+      <label for="recipe_file">Recipe File</label>
+      <input id="recipe_file" name="recipe_file" type="file" accept=".pdf,.txt,.md,.json">
+      {% if form.get('recipe_file_url') %}
+      <div class="field-note">
+        <a href="{{ form.get('recipe_file_url') }}">Current recipe file</a>
+        <label class="inline-check">
+          <input name="remove_recipe_file" type="checkbox" value="true">
+          Remove
+        </label>
+      </div>
+      {% endif %}
+    </div>
+    <div class="field">
+      <label for="photo">Photo</label>
+      <input id="photo" name="photo" type="file" accept="image/gif,image/jpeg,image/png,image/webp">
+      {% if form.get('photo_url') %}
+      <div class="field-note">
+        <a href="{{ form.get('photo_url') }}">Current photo</a>
+        <label class="inline-check">
+          <input name="remove_photo" type="checkbox" value="true">
+          Remove
+        </label>
+      </div>
+      {% endif %}
+    </div>
+    <div class="field field-full">
+      <label for="notes">Notes</label>
+      <textarea id="notes" name="notes">{{ form.get('notes', '') }}</textarea>
+    </div>
+  </div>
+  <div class="form-actions">
+    <button type="submit">{{ submit_label }}</button>
+  </div>
+</form>
+<script>
+  for (const input of document.querySelectorAll(".choice-filter")) {
+    const select = document.getElementById(input.dataset.controls);
+    input.addEventListener("input", () => {
+      const query = input.value.trim().toLowerCase();
+      for (const option of select.options) {
+        if (!option.value) {
+          option.hidden = false;
+          continue;
+        }
+        const haystack = (option.dataset.search || option.textContent).toLowerCase();
+        option.hidden = query.length > 0 && !haystack.includes(query);
+      }
+    });
+  }
+
+  const place = document.querySelector("[data-placement-place]");
+  const scope = document.querySelector("[data-placement-scope]");
+  const syncPlacementScope = () => {
+    if (!place || !scope) {
+      return;
+    }
+    if (place.value && !scope.value) {
+      scope.value = "category";
+    }
+    if (!place.value) {
+      scope.value = "";
+    }
+  };
+  place?.addEventListener("change", syncPlacementScope);
+</script>
+{% endblock %}
