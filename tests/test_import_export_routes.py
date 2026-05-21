@@ -500,7 +500,7 @@ def test_result_csv_import_rejects_unresolved_references_without_partial_write(
         assert "Row 3: member_email missing@example.test was not found." in response.text
         assert "Row 3: style_subcategory_code NOPE" in response.text
         assert "Row 3: bjcp_score must be greater than 0 and no more than 50." in response.text
-        assert "Row 3: place must be between 1st and 4th." in response.text
+        assert "Row 3: place must be 1st, 2nd, 3rd, or HM." in response.text
         with SessionLocal() as db:
             assert db.scalar(select(Result).where(Result.member_id == member_id)) is None
     finally:

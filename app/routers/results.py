@@ -28,6 +28,7 @@ from app.domain.scoring import leaderboard_breakdown, leaderboard_points
 from app.domain.seasons import Season
 from app.services.audit import record_audit
 from app.services.leaderboard_settings import load_leaderboard_settings
+from app.services.placements import parse_place_value
 from app.services.member_auth import ensure_primary_email_alias
 from app.services.uploads import delete_upload_url, save_result_upload, upload_has_file
 from app.services.urls import validate_link_url
@@ -668,19 +669,25 @@ def render_form(
     page_title: str = "Add Result",
     page_heading: str = "Add result",
     submit_label: str = "Save Result",
+    member_locked: Member | None = None,
     status_code: int = 200,
 ) -> HTMLResponse:
-    members = db.scalars(
-        select(Member)
-        .where(Member.deactivated_at.is_(None))
-        .order_by(Member.display_name)
-    ).all()
-    if selected_member_id is not None and all(
-        member.id != selected_member_id for member in members
-    ):
-        selected_member = db.get(Member, selected_member_id)
-        if selected_member is not None:
-            members = [selected_member, *members]
+    if member_locked is not None:
+        members = [member_locked]
+        selected_member_id = member_locked.id
+        form = {**(form or {}), "member_id": str(member_locked.id)}
+    else:
+        members = db.scalars(
+            select(Member)
+            .where(Member.deactivated_at.is_(None))
+            .order_by(Member.display_name)
+        ).all()
+        if selected_member_id is not None and all(
+            member.id != selected_member_id for member in members
+        ):
+            selected_member = db.get(Member, selected_member_id)
+            if selected_member is not None:
+                members = [selected_member, *members]
     competitions = db.scalars(
         select(Competition)
         .where(Competition.archived_at.is_(None))
@@ -712,6 +719,7 @@ def render_form(
             "page_title": page_title,
             "page_heading": page_heading,
             "submit_label": submit_label,
+            "member_locked": member_locked,
         },
         status_code=status_code,
     )
@@ -905,7 +913,7 @@ def validate_result(
         errors.append("BJCP score must be greater than 0 and no more than 50.")
 
     if place is not None and place not in {1, 2, 3, 4}:
-        errors.append("Place must be between 1st and 4th.")
+        errors.append("Place must be 1st, 2nd, 3rd, or HM.")
 
     if (place is None) != (placement_scope is None):
         errors.append("Place and placement scope must be set together.")
@@ -1356,13 +1364,12 @@ def parse_place(value: str | None, index: int, errors: list[str]) -> int | None:
     cleaned = (value or "").strip()
     if not cleaned:
         return None
-    try:
-        place = int(cleaned)
-    except ValueError:
-        errors.append(f"Row {index}: place must be an integer.")
+    place = parse_place_value(cleaned)
+    if place is None:
+        errors.append(f"Row {index}: place must be 1, 2, 3, or HM.")
         return None
     if place not in {1, 2, 3, 4}:
-        errors.append(f"Row {index}: place must be between 1st and 4th.")
+        errors.append(f"Row {index}: place must be 1st, 2nd, 3rd, or HM.")
     return place
 
 

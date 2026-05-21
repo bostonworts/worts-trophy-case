@@ -10,8 +10,12 @@
   </div>
   <div class="inline-actions">
     <a class="button-secondary" href="/results">Results</a>
+    {% if request.state.current_member and request.state.current_member.is_admin %}
     <a class="button-secondary" href="/members/new">Add Member</a>
     <a class="button-secondary" href="/competitions/new">Add Competition</a>
+    {% elif request.state.current_member %}
+    <a class="button-secondary" href="/me/submissions">My Submissions</a>
+    {% endif %}
   </div>
 </header>
 
@@ -25,6 +29,13 @@
   </div>
   {% endif %}
   <div class="form-grid">
+    {% if member_locked %}
+    <input type="hidden" name="member_id" value="{{ member_locked.id }}">
+    <div class="field">
+      <label>Member</label>
+      <div class="readonly-field">{{ member_locked.display_name }}</div>
+    </div>
+    {% else %}
     <div class="field">
       <label for="member_filter">Member</label>
       <input class="choice-filter" id="member_filter" type="search" autocomplete="off" data-controls="member_id">
@@ -37,6 +48,7 @@
         {% endfor %}
       </select>
     </div>
+    {% endif %}
     <div class="field">
       <label for="competition_filter">Competition</label>
       <input class="choice-filter" id="competition_filter" type="search" autocomplete="off" data-controls="competition_id">
@@ -72,7 +84,7 @@
         <option value="1" {% if form.get('place') == '1' %}selected{% endif %}>1st</option>
         <option value="2" {% if form.get('place') == '2' %}selected{% endif %}>2nd</option>
         <option value="3" {% if form.get('place') == '3' %}selected{% endif %}>3rd</option>
-        <option value="4" {% if form.get('place') == '4' %}selected{% endif %}>4th</option>
+        <option value="4" {% if form.get('place') == '4' %}selected{% endif %}>HM</option>
       </select>
     </div>
     <div class="field">

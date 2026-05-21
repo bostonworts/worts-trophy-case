@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+
+{% block title %}My Submissions - Trophy Case{% endblock %}
+
+{% block content %}
+<header class="page-header">
+  <div>
+    <p class="kicker">Member</p>
+    <h1>My submissions</h1>
+    <p class="lede">Results you have sent to the admins for review.</p>
+  </div>
+  <div class="inline-actions">
+    <a class="button-secondary" href="/me">My Profile</a>
+    {% if member.good_standing %}
+    <a class="button" href="/me/results/new">Submit Result</a>
+    {% endif %}
+  </div>
+</header>
+
+<section class="panel">
+  <div class="panel-heading">
+    <h2>Submitted results</h2>
+  </div>
+  {% if submissions %}
+  <table>
+    <thead>
+      <tr>
+        <th>Submitted</th>
+        <th>Competition</th>
+        <th>Style</th>
+        <th>Place</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for submission in submissions %}
+      <tr>
+        <td>
+          <a class="result-link" href="/me/submissions/{{ submission.id }}">{{ submission.created_at.date().isoformat() }}</a>
+        </td>
+        <td>
+          <span class="table-primary">{{ submission.competition.name }}</span>
+          <span class="table-secondary">{{ submission.competition.date.isoformat() }}</span>
+        </td>
+        <td>
+          <span class="table-primary">{{ submission.style_subcategory.code }} {{ submission.style_subcategory.name }}</span>
+          <span class="table-secondary">{{ submission.style_subcategory.category.code }} {{ submission.style_subcategory.category.name }}</span>
+        </td>
+        <td>
+          {% if submission.place %}
+          <span class="table-primary">{{ submission.place|place_label }}</span>
+          <span class="table-secondary">{{ submission.placement_scope.value.replace("_", " ") }}</span>
+          {% else %}
+          <span class="muted">Unplaced</span>
+          {% endif %}
+        </td>
+        <td>
+          {% if submission.status.value == "pending" %}
+          <span class="status-pill status-pending">Pending</span>
+          {% elif submission.status.value == "approved" %}
+          <span class="status-pill status-approved">Approved</span>
+          {% else %}
+          <span class="status-pill status-rejected">Rejected</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="empty">
+    <strong>No submissions yet</strong>
+    Send a result for admin review when you have a new competition entry.
+  </div>
+  {% endif %}
+</section>
+{% endblock %}

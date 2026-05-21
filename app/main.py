@@ -9,7 +9,7 @@ from app.auth import member_id_from_request
 from app.core.config import settings
 from app.db.models import Member
 from app.db.session import SessionLocal
-from app.routers import admin, auth, competitions, leaderboard, members, results, styles
+from app.routers import admin, auth, competitions, leaderboard, members, results, styles, submissions
 from app.services.csrf import csrf_token_for_request, require_csrf, set_csrf_cookie
 
 
@@ -46,6 +46,7 @@ def create_app() -> FastAPI:
 
     app.include_router(auth.router)
     app.include_router(admin.router)
+    app.include_router(submissions.router)
     app.include_router(results.router)
     app.include_router(competitions.router)
     app.include_router(styles.router)

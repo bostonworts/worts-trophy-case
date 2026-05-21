@@ -265,4 +265,4 @@ def parse_form_optional_decimal(
 
 
 def place_label(place: int) -> str:
-    return {1: "1st", 2: "2nd", 3: "3rd", 4: "4th"}[place]
+    return {1: "1st", 2: "2nd", 3: "3rd", 4: "HM"}[place]

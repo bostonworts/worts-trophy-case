@@ -89,7 +89,7 @@
         <td><span class="table-primary">{{ row.member }}</span></td>
         <td><span class="table-primary">{{ row.competition }}</span></td>
         <td>
-          <span class="place-badge place-{{ row.place }}">{{ row.place }}{% if row.place == 1 %}st{% elif row.place == 2 %}nd{% elif row.place == 3 %}rd{% else %}th{% endif %}</span>
+          <span class="place-badge place-{{ row.place }}">{{ row.place|place_label }}</span>
           <span class="scope-text">{{ row.scope.replace("_", " ") }}</span>
         </td>
         <td>

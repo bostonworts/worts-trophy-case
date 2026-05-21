@@ -9,11 +9,17 @@
   <body>
     <header class="topbar">
       <div class="topbar-inner">
-        <a class="brand" href="/results">Trophy Case</a>
+        <a class="brand" href="/results">
+          <img class="brand-logo" src="https://avatars.githubusercontent.com/u/10747207?s=96&amp;u=b0520d4be84bb767f32391bc08970f6f5da7a564&amp;v=4" alt="" aria-hidden="true">
+          <span>Trophy Case</span>
+        </a>
         <nav class="nav" aria-label="Primary">
           <a href="/results">Results</a>
           <a href="/competitions">Competitions</a>
           <a href="/styles">Styles</a>
+          {% if request.state.current_member and not request.state.current_member.is_admin %}
+          <a href="/me/results/new">Submit Result</a>
+          {% endif %}
           {% if request.state.current_member and request.state.current_member.is_admin %}
           <a href="/admin">Admin</a>
           <a href="/members">Members</a>

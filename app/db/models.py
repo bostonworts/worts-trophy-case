@@ -87,6 +87,12 @@ class MemberEmailKind(str, enum.Enum):
     MAILING_LIST = "mailing_list"
 
 
+class MemberResultSubmissionStatus(str, enum.Enum):
+    PENDING = "pending"
+    APPROVED = "approved"
+    REJECTED = "rejected"
+
+
 def enum_values(enum_class: type[enum.Enum]) -> list[str]:
     return [item.value for item in enum_class]
 
@@ -155,6 +161,79 @@ class MemberLoginChallenge(Base):
     )
 
     member: Mapped[Member] = relationship()
+
+
+class MemberResultSubmission(TimestampMixin, Base):
+    __tablename__ = "member_result_submissions"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    member_id: Mapped[int] = mapped_column(
+        ForeignKey("members.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    competition_id: Mapped[int] = mapped_column(ForeignKey("competitions.id"), nullable=False)
+    style_subcategory_id: Mapped[int] = mapped_column(
+        ForeignKey("style_subcategories.id"),
+        nullable=False,
+    )
+    bjcp_score: Mapped[Decimal | None] = mapped_column(Numeric(4, 1), nullable=True)
+    place: Mapped[int | None] = mapped_column(nullable=True)
+    placement_scope: Mapped[PlacementScope | None] = mapped_column(
+        SAEnum(
+            PlacementScope,
+            values_callable=enum_values,
+            native_enum=False,
+            name="placement_scope",
+        ),
+        nullable=True,
+    )
+    recipe_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    recipe_file_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    photo_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    notes: Mapped[str | None] = mapped_column(String(2000), nullable=True)
+    status: Mapped[MemberResultSubmissionStatus] = mapped_column(
+        SAEnum(
+            MemberResultSubmissionStatus,
+            values_callable=enum_values,
+            native_enum=False,
+            name="member_result_submission_status",
+        ),
+        default=MemberResultSubmissionStatus.PENDING,
+        server_default=MemberResultSubmissionStatus.PENDING.value,
+        nullable=False,
+    )
+    reviewed_by_member_id: Mapped[int | None] = mapped_column(
+        ForeignKey("members.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    result_id: Mapped[int | None] = mapped_column(
+        ForeignKey("results.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    rejection_reason: Mapped[str | None] = mapped_column(String(500), nullable=True)
+
+    member: Mapped[Member] = relationship(foreign_keys=[member_id])
+    competition: Mapped[Competition] = relationship()
+    style_subcategory: Mapped[StyleSubcategory] = relationship()
+    reviewed_by: Mapped[Member | None] = relationship(foreign_keys=[reviewed_by_member_id])
+    result: Mapped[Result | None] = relationship()
+
+    __table_args__ = (
+        CheckConstraint(
+            "bjcp_score IS NULL OR (bjcp_score > 0 AND bjcp_score <= 50)",
+            name="ck_member_result_submissions_bjcp_score",
+        ),
+        CheckConstraint(
+            "place IS NULL OR place BETWEEN 1 AND 4",
+            name="ck_member_result_submissions_place",
+        ),
+        CheckConstraint(
+            "(place IS NULL AND placement_scope IS NULL) OR "
+            "(place IS NOT NULL AND placement_scope IS NOT NULL)",
+            name="ck_member_result_submissions_place_scope_pair",
+        ),
+    )
 
 
 class Competition(TimestampMixin, Base):

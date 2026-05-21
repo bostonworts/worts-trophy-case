@@ -83,7 +83,7 @@
         <td>{% if result.bjcp_score %}<span class="score-pill">{{ result.bjcp_score }}</span>{% else %}<span class="muted">Not scored</span>{% endif %}</td>
         <td>
           {% if result.place %}
-          <span class="place-badge place-{{ result.place }}">{{ result.place }}{% if result.place == 1 %}st{% elif result.place == 2 %}nd{% elif result.place == 3 %}rd{% else %}th{% endif %}</span>
+          <span class="place-badge place-{{ result.place }}">{{ result.place|place_label }}</span>
           <span class="scope-text">{{ result.placement_scope.value.replace("_", " ") }}</span>
           {% else %}
           <span class="place-badge place-empty">Unplaced</span>
@@ -124,7 +124,7 @@
         <td><a class="style-chip" href="/results/{{ result.id }}">{{ result.style_subcategory.code }} {{ result.style_subcategory.name }}</a></td>
         <td>
           {% if result.place %}
-          <span class="place-badge place-{{ result.place }}">{{ result.place }}{% if result.place == 1 %}st{% elif result.place == 2 %}nd{% elif result.place == 3 %}rd{% else %}th{% endif %}</span>
+          <span class="place-badge place-{{ result.place }}">{{ result.place|place_label }}</span>
           <span class="scope-text">{{ result.placement_scope.value.replace("_", " ") }}</span>
           {% else %}
           <span class="place-badge place-empty">Unplaced</span>

@@ -19,6 +19,8 @@ from app.db.models import (
     Member,
     MemberEmail,
     MemberEmailKind,
+    MemberResultSubmission,
+    MemberResultSubmissionStatus,
     PlacementScope,
     Result,
     StyleCategory,
@@ -33,6 +35,7 @@ from app.services.leaderboard_settings import (
     save_leaderboard_settings,
     validate_leaderboard_settings_form,
 )
+from app.services.placements import parse_place_value
 from app.services.uploads import delete_upload_url
 from app.services.urls import validate_link_url
 from app.services.member_auth import ensure_primary_email_alias, member_with_any_email
@@ -61,6 +64,16 @@ def dashboard(
         .limit(8)
     ).all()
     attention_items = [
+        {
+            "label": "Member result submissions",
+            "count": scalar_count(
+                db,
+                select(func.count(MemberResultSubmission.id)).where(
+                    MemberResultSubmission.status == MemberResultSubmissionStatus.PENDING
+                ),
+            ),
+            "href": "/admin/submissions",
+        },
         {
             "label": "Results without BJCP score",
             "count": scalar_count(
@@ -851,7 +864,8 @@ def restore_result_from_payload(
     style_guide_year = parse_int(item.get("style_guide_year"))
     style_code = clean_text(item.get("style_subcategory_code"))
     bjcp_score = parse_decimal(item.get("bjcp_score"))
-    place = parse_int(item.get("place"))
+    raw_place = item.get("place")
+    place = parse_place_value(raw_place)
     placement_scope = parse_placement_scope(item.get("placement_scope"))
     status = clean_text(item.get("status") or "active").lower()
     recipe_url, recipe_url_error = validate_link_url(
@@ -899,8 +913,10 @@ def restore_result_from_payload(
         errors.append(f"Result {index}: bjcp_score must be a decimal.")
     if bjcp_score is not None and (bjcp_score <= 0 or bjcp_score > 50):
         errors.append(f"Result {index}: bjcp_score must be greater than 0 and no more than 50.")
-    if place is not None and place not in {1, 2, 3, 4}:
-        errors.append(f"Result {index}: place must be between 1st and 4th.")
+    if clean_text(raw_place) and place is None:
+        errors.append(f"Result {index}: place must be 1, 2, 3, or HM.")
+    elif place is not None and place not in {1, 2, 3, 4}:
+        errors.append(f"Result {index}: place must be 1st, 2nd, 3rd, or HM.")
     if (place is None) != (placement_scope is None):
         errors.append(f"Result {index}: place and placement_scope must be set together.")
     if status not in {"active", "archived"}:

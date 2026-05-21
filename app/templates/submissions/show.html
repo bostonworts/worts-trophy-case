@@ -1,0 +1,190 @@
+{% extends "base.html" %}
+
+{% block title %}Submission - Trophy Case{% endblock %}
+
+{% block content %}
+<header class="page-header">
+  <div>
+    <p class="kicker">{% if admin_view %}Admin{% else %}Member{% endif %}</p>
+    <h1>Result submission</h1>
+    <p class="lede">{{ submission.member.display_name }} &middot; {{ submission.competition.name }}</p>
+  </div>
+  <div class="inline-actions">
+    {% if admin_view %}
+    <a class="button-secondary" href="/admin/submissions">Submissions</a>
+    {% else %}
+    <a class="button-secondary" href="/me/submissions">My Submissions</a>
+    {% endif %}
+    {% if submission.result_id %}
+    <a class="button" href="/results/{{ submission.result_id }}">View Result</a>
+    {% endif %}
+  </div>
+</header>
+
+{% if errors %}
+<div class="form-errors" role="alert">
+  {% for error in errors %}
+  <p>{{ error }}</p>
+  {% endfor %}
+</div>
+{% endif %}
+
+<section class="panel detail-panel">
+  <div class="detail-grid">
+    <div class="detail-section">
+      <h2>Status</h2>
+      <dl class="detail-list">
+        <div>
+          <dt>Review</dt>
+          <dd>
+            {% if submission.status.value == "pending" %}
+            <span class="status-pill status-pending">Pending</span>
+            {% elif submission.status.value == "approved" %}
+            <span class="status-pill status-approved">Approved</span>
+            {% else %}
+            <span class="status-pill status-rejected">Rejected</span>
+            {% endif %}
+          </dd>
+        </div>
+        <div>
+          <dt>Submitted</dt>
+          <dd>{{ submission.created_at.date().isoformat() }}</dd>
+        </div>
+        {% if submission.reviewed_at %}
+        <div>
+          <dt>Reviewed</dt>
+          <dd>{{ submission.reviewed_at.date().isoformat() }}{% if submission.reviewed_by %} by {{ submission.reviewed_by.display_name }}{% endif %}</dd>
+        </div>
+        {% endif %}
+        {% if submission.rejection_reason %}
+        <div>
+          <dt>Reason</dt>
+          <dd>{{ submission.rejection_reason }}</dd>
+        </div>
+        {% endif %}
+      </dl>
+    </div>
+
+    <div class="detail-section">
+      <h2>Member</h2>
+      <dl class="detail-list">
+        <div>
+          <dt>Name</dt>
+          <dd><a href="/members/{{ submission.member.id }}">{{ submission.member.display_name }}</a></dd>
+        </div>
+        {% if admin_view %}
+        <div>
+          <dt>Email</dt>
+          <dd>{{ submission.member.email }}</dd>
+        </div>
+        {% endif %}
+      </dl>
+    </div>
+
+    <div class="detail-section">
+      <h2>Competition</h2>
+      <dl class="detail-list">
+        <div>
+          <dt>Name</dt>
+          <dd><a href="/competitions/{{ submission.competition.id }}">{{ submission.competition.name }}</a></dd>
+        </div>
+        <div>
+          <dt>Date</dt>
+          <dd>{{ submission.competition.date.isoformat() }}</dd>
+        </div>
+        <div>
+          <dt>Type</dt>
+          <dd>{{ submission.competition.competition_type.value.replace("_", " ") }}</dd>
+        </div>
+      </dl>
+    </div>
+
+    <div class="detail-section">
+      <h2>Style</h2>
+      <dl class="detail-list">
+        <div>
+          <dt>Subcategory</dt>
+          <dd>{{ submission.style_subcategory.code }} {{ submission.style_subcategory.name }}</dd>
+        </div>
+        <div>
+          <dt>Category</dt>
+          <dd>{{ submission.style_subcategory.category.code }} {{ submission.style_subcategory.category.name }}</dd>
+        </div>
+      </dl>
+    </div>
+
+    <div class="detail-section">
+      <h2>Placement</h2>
+      <dl class="detail-list">
+        <div>
+          <dt>BJCP score</dt>
+          <dd>{{ submission.bjcp_score or "Not recorded" }}</dd>
+        </div>
+        <div>
+          <dt>Place</dt>
+          <dd>
+            {% if submission.place %}
+            {{ submission.place|place_label }} in {{ submission.placement_scope.value.replace("_", " ") }}
+            {% else %}
+            Not placed
+            {% endif %}
+          </dd>
+        </div>
+      </dl>
+    </div>
+
+    <div class="detail-section">
+      <h2>Attachments</h2>
+      <div class="attachment-list detail-attachments">
+        {% if submission.recipe_url %}
+        <a href="{{ submission.recipe_url }}">Recipe URL</a>
+        {% endif %}
+        {% if submission.recipe_file_url %}
+        <a href="{{ submission.recipe_file_url }}">Recipe file</a>
+        {% endif %}
+        {% if submission.photo_url %}
+        <a href="{{ submission.photo_url }}">Photo</a>
+        {% endif %}
+        {% if not submission.recipe_url and not submission.recipe_file_url and not submission.photo_url %}
+        <span class="muted">None</span>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  {% if submission.notes %}
+  <div class="detail-notes">
+    <h2>Notes</h2>
+    <p>{{ submission.notes }}</p>
+  </div>
+  {% endif %}
+
+  {% if submission.photo_url %}
+  <div class="result-photo-wrap">
+    <img class="result-photo" src="{{ submission.photo_url }}" alt="{{ submission.member.display_name }} entry photo">
+  </div>
+  {% endif %}
+</section>
+
+{% if admin_view and submission.status.value == "pending" %}
+<section class="panel archive-panel">
+  <div class="panel-heading">
+    <h2>Review</h2>
+  </div>
+  <div class="review-actions">
+    <form method="post" action="/admin/submissions/{{ submission.id }}/approve">
+      {% include "_csrf.html" %}
+      <button type="submit">Approve Result</button>
+    </form>
+    <form method="post" action="/admin/submissions/{{ submission.id }}/reject">
+      {% include "_csrf.html" %}
+      <div class="field">
+        <label for="rejection_reason">Rejection Note</label>
+        <textarea id="rejection_reason" name="rejection_reason"></textarea>
+      </div>
+      <button class="button-secondary" type="submit">Reject</button>
+    </form>
+  </div>
+</section>
+{% endif %}
+{% endblock %}

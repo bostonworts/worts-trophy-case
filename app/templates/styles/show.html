@@ -115,7 +115,7 @@
         <td>{{ result.bjcp_score or "" }}</td>
         <td>
           {% if result.place %}
-          {{ result.place }} in {{ result.placement_scope.value.replace("_", " ") }}
+          {{ result.place|place_label }} in {{ result.placement_scope.value.replace("_", " ") }}
           {% else %}
           <span class="muted">Unplaced</span>
           {% endif %}

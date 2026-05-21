@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+
+{% block title %}Member Submissions - Trophy Case{% endblock %}
+
+{% block content %}
+<header class="page-header">
+  <div>
+    <p class="kicker">Admin</p>
+    <h1>Member submissions</h1>
+    <p class="lede">Review member-submitted competition results before they enter the archive.</p>
+  </div>
+  <div class="inline-actions">
+    <a class="button-secondary" href="/admin">Dashboard</a>
+    <a class="button-secondary" href="/results">Results</a>
+  </div>
+</header>
+
+<section class="panel">
+  <div class="panel-heading">
+    <h2>Pending review</h2>
+  </div>
+  {% if pending_submissions %}
+  <table>
+    <thead>
+      <tr>
+        <th>Submitted</th>
+        <th>Member</th>
+        <th>Competition</th>
+        <th>Style</th>
+        <th>Place</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for submission in pending_submissions %}
+      <tr>
+        <td>{{ submission.created_at.date().isoformat() }}</td>
+        <td>
+          <a class="result-link" href="/members/{{ submission.member.id }}">{{ submission.member.display_name }}</a>
+          <span class="table-secondary">{{ submission.member.email }}</span>
+        </td>
+        <td>
+          <span class="table-primary">{{ submission.competition.name }}</span>
+          <span class="table-secondary">{{ submission.competition.date.isoformat() }}</span>
+        </td>
+        <td>
+          <span class="table-primary">{{ submission.style_subcategory.code }} {{ submission.style_subcategory.name }}</span>
+          <span class="table-secondary">{{ submission.style_subcategory.category.code }} {{ submission.style_subcategory.category.name }}</span>
+        </td>
+        <td>
+          {% if submission.place %}
+          <span class="table-primary">{{ submission.place|place_label }}</span>
+          <span class="table-secondary">{{ submission.placement_scope.value.replace("_", " ") }}</span>
+          {% else %}
+          <span class="muted">Unplaced</span>
+          {% endif %}
+        </td>
+        <td class="table-action">
+          <a class="button-secondary" href="/admin/submissions/{{ submission.id }}">Review</a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="empty">
+    <strong>No pending submissions</strong>
+    New member submissions will appear here.
+  </div>
+  {% endif %}
+</section>
+
+{% if reviewed_submissions %}
+<section class="panel archive-panel">
+  <div class="panel-heading">
+    <h2>Recently reviewed</h2>
+  </div>
+  <table>
+    <thead>
+      <tr>
+        <th>Reviewed</th>
+        <th>Member</th>
+        <th>Competition</th>
+        <th>Status</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for submission in reviewed_submissions %}
+      <tr>
+        <td>{% if submission.reviewed_at %}{{ submission.reviewed_at.date().isoformat() }}{% endif %}</td>
+        <td>{{ submission.member.display_name }}</td>
+        <td>{{ submission.competition.name }}</td>
+        <td>
+          {% if submission.status.value == "approved" %}
+          <span class="status-pill status-approved">Approved</span>
+          {% else %}
+          <span class="status-pill status-rejected">Rejected</span>
+          {% endif %}
+        </td>
+        <td class="table-action">
+          <a class="button-secondary" href="/admin/submissions/{{ submission.id }}">View</a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endif %}
+{% endblock %}

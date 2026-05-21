@@ -24,9 +24,34 @@ def save_result_upload(
     upload: UploadFile,
     kind: str,
 ) -> str:
+    return save_upload(
+        upload=upload,
+        kind=kind,
+        target_dir=upload_root() / "results" / str(result_id) / kind,
+    )
+
+
+def save_submission_upload(
+    *,
+    submission_id: int,
+    upload: UploadFile,
+    kind: str,
+) -> str:
+    return save_upload(
+        upload=upload,
+        kind=kind,
+        target_dir=upload_root() / "submissions" / str(submission_id) / kind,
+    )
+
+
+def save_upload(
+    *,
+    upload: UploadFile,
+    kind: str,
+    target_dir: Path,
+) -> str:
     extension = validate_upload(upload=upload, kind=kind)
     filename = safe_filename(upload.filename or f"upload{extension}")
-    target_dir = upload_root() / "results" / str(result_id) / kind
     target_dir.mkdir(parents=True, exist_ok=True)
 
     target = target_dir / f"{token_urlsafe(10)}-{filename}"

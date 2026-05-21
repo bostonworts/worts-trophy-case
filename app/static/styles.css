@@ -56,6 +56,9 @@ a {
 }
 
 .brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
   color: var(--ink);
   font-size: 1.05rem;
   font-weight: 800;
@@ -63,15 +66,14 @@ a {
   text-decoration: none;
 }
 
-.brand::before {
-  content: "";
-  display: inline-block;
-  width: 10px;
-  height: 18px;
-  margin-right: 9px;
-  border-radius: 2px 2px 5px 5px;
-  background: linear-gradient(180deg, var(--brass), var(--accent));
-  vertical-align: -3px;
+.brand-logo {
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-warm);
+  object-fit: cover;
+  box-shadow: 0 6px 14px rgb(24 33 47 / 0.12);
 }
 
 .nav {
@@ -367,6 +369,15 @@ tr:last-child td {
   gap: 12px;
   color: var(--muted);
   font-size: 0.9rem;
+}
+
+.readonly-field {
+  min-height: 42px;
+  padding: 9px 10px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: #fbf8f0;
+  font-weight: 700;
 }
 
 .inline-check {
@@ -700,6 +711,44 @@ textarea {
   border-color: var(--line);
   background: #f6f2ea;
   color: var(--muted);
+}
+
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 3px 9px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 850;
+  white-space: nowrap;
+}
+
+.status-pending {
+  border-color: #ecd9ad;
+  background: var(--brass-soft);
+  color: #6f4d10;
+}
+
+.status-approved {
+  border-color: #d4dfd6;
+  background: #edf6ef;
+  color: var(--green);
+}
+
+.status-rejected {
+  border-color: #ead2cd;
+  background: var(--rose-soft);
+  color: var(--accent-strong);
+}
+
+.review-actions {
+  display: grid;
+  grid-template-columns: minmax(180px, 240px) 1fr;
+  gap: 18px;
+  align-items: start;
+  padding: 20px;
 }
 
 .scope-text {
