@@ -65,6 +65,7 @@ def test_member_can_be_created_and_listed(admin_client) -> None:
             assert member.display_name == "Route Member"
             assert not member.is_admin
             assert member.good_standing
+            assert member.submission_review_required
             aliases = {
                 alias.kind: alias.email
                 for alias in db.scalars(
@@ -73,6 +74,41 @@ def test_member_can_be_created_and_listed(admin_client) -> None:
             }
             assert aliases[MemberEmailKind.PAYPAL] == PAYPAL_EMAIL
             assert aliases[MemberEmailKind.MAILING_LIST] == LIST_EMAIL
+    finally:
+        cleanup_member()
+
+
+def test_member_submission_review_requirement_can_be_removed(admin_client) -> None:
+    cleanup_member()
+    try:
+        with SessionLocal() as db:
+            member = Member(
+                email=TEST_EMAIL,
+                display_name="Route Member",
+                good_standing=True,
+                submission_review_required=True,
+            )
+            db.add(member)
+            db.commit()
+            member_id = member.id
+
+        response = admin_client.post(
+            f"/members/{member_id}",
+            data={
+                "display_name": "Route Member",
+                "email": TEST_EMAIL,
+                "good_standing": "true",
+                "submission_review_required": "false",
+            },
+            follow_redirects=False,
+        )
+
+        assert response.status_code == 303
+        assert response.headers["location"] == "/members"
+        with SessionLocal() as db:
+            member = db.get(Member, member_id)
+            assert member is not None
+            assert member.submission_review_required is False
     finally:
         cleanup_member()
 

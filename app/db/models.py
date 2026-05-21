@@ -105,6 +105,7 @@ class Member(TimestampMixin, Base):
     display_name: Mapped[str] = mapped_column(String(200), nullable=False)
     is_admin: Mapped[bool] = mapped_column(default=False, nullable=False)
     good_standing: Mapped[bool] = mapped_column(default=True, nullable=False)
+    submission_review_required: Mapped[bool] = mapped_column(default=True, nullable=False)
     deactivated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     results: Mapped[list[Result]] = relationship(back_populates="member")

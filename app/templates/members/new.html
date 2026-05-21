@@ -40,6 +40,11 @@
       <input id="good_standing" name="good_standing" type="checkbox" value="true" {% if form.get('good_standing', 'true') %}checked{% endif %}>
       <label for="good_standing">Member in good standing</label>
     </div>
+    <div class="field checkbox-field">
+      <input name="submission_review_required" type="hidden" value="false">
+      <input id="submission_review_required" name="submission_review_required" type="checkbox" value="true" {% if form.get('submission_review_required', 'true') %}checked{% endif %}>
+      <label for="submission_review_required">Require result submission review</label>
+    </div>
     <div class="field field-full checkbox-field">
       <input id="is_admin" name="is_admin" type="checkbox" value="true" {% if form.get('is_admin') %}checked{% endif %}>
       <label for="is_admin">Admin</label>

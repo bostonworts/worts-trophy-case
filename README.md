@@ -25,9 +25,11 @@ login links and codes are printed to the web container logs. Authenticated form
 posts use CSRF tokens, and member login email requests are rate limited by email
 and client IP.
 
-Good-standing members can submit their own results at `/me/results/new`. Admins
-review pending submissions at `/admin/submissions`; approval creates the public
-result and rejection leaves the member a private reason to correct and resubmit.
+Good-standing members can add competitions and submit their own results at
+`/me/results/new`. Admins review pending submissions at `/admin/submissions`;
+approval creates the public result and rejection leaves the member a private
+reason to correct and resubmit. Admins can also mark trusted members as no
+longer needing submission review, letting future submissions publish immediately.
 
 Uploaded result photos and recipe files are stored under `/Users/Shared/Docker/trophy-case/uploads` on the host and served locally from `/uploads`.
 
@@ -143,6 +145,7 @@ All Docker bind mounts live under `/Users/Shared/Docker/trophy-case/`. The `bin/
 - Admin member roster and member form at `/members`
 - Admin CSV exports at `/results.csv`, `/members.csv`, and `/competitions.csv`
 - Admin member import from CSV or Google Sheets at `/members/import`
+- Member-created competitions after login
 - Admin competition and result CSV imports at `/competitions/import` and `/results/import`
 - CSV import preview for members, competitions, and results before committing rows
 - Likely duplicate skipping for result CSV imports
@@ -152,7 +155,7 @@ All Docker bind mounts live under `/Users/Shared/Docker/trophy-case/`. The `bin/
 - Local signed-cookie admin login at `/login`
 - Roster-backed member magic-link and code login at `/member-login`
 - Member profile redirect at `/me`
-- Member-submitted results with admin approval or rejection
+- Member-submitted results with admin approval, rejection, or trusted auto-publish
 - Local photo and recipe-file uploads for results
 - Searchable result-entry selectors for members, competitions, and BJCP styles
 - Configurable leaderboard season start, placement points, BJCP threshold, and competition type weights

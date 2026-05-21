@@ -150,7 +150,13 @@ Good-standing members can submit their own winnings at `/me/results/new`. New
 submissions stay out of the public archive until an admin approves them at
 `/admin/submissions`; approval creates the public result and copies any uploaded
 recipe or photo into the result upload directory. Rejections stay visible to the
-member with the admin's reason.
+member with the admin's reason. Admins can edit a member and clear
+`Require result submission review`; that member's future submissions publish
+immediately while still keeping an approved submission record.
+
+Logged-in good-standing members can also add competitions at `/competitions/new`.
+New competitions are public immediately; edits, imports, archive, and restore
+remain admin-only.
 
 ## Backups
 
@@ -216,6 +222,8 @@ docker compose -f compose.prod.yaml logs --tail=100 web
 - A good-standing member can use both magic link and six-digit code.
 - A lapsed or inactive member does not receive a login email.
 - A good-standing member can submit a result and an admin can approve or reject it.
+- A trusted member can submit a result without entering the admin review queue.
+- A logged-in member can add a competition without admin review.
 - `bin/prod-backup` produces both `postgres.dump` and `uploads.tar.gz`.
 - A recent backup has been restored successfully in a throwaway environment.
 

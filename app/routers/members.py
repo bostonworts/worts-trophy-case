@@ -43,6 +43,7 @@ MEMBER_IMPORT_COLUMNS = {
     "display_name",
     "is_admin",
     "good_standing",
+    "submission_review_required",
     "status",
     "deactivated_at",
     "created_at",
@@ -93,6 +94,7 @@ def export_members(
             "display_name",
             "is_admin",
             "good_standing",
+            "submission_review_required",
             "status",
             "deactivated_at",
             "created_at",
@@ -110,6 +112,9 @@ def export_members(
                 "display_name": member.display_name,
                 "is_admin": "true" if member.is_admin else "false",
                 "good_standing": "true" if member.good_standing else "false",
+                "submission_review_required": (
+                    "true" if member.submission_review_required else "false"
+                ),
                 "status": "inactive" if member.deactivated_at else "active",
                 "deactivated_at": isoformat_or_empty(member.deactivated_at),
                 "created_at": isoformat_or_empty(member.created_at),
@@ -163,6 +168,11 @@ def import_members(
                 display_name=row.display_name,
                 is_admin=row.is_admin,
                 good_standing=row.good_standing,
+                submission_review_required=(
+                    row.submission_review_required
+                    if row.submission_review_required is not None
+                    else True
+                ),
             )
             db.add(member)
             db.flush()
@@ -171,6 +181,8 @@ def import_members(
             member.display_name = row.display_name
             member.is_admin = row.is_admin
             member.good_standing = row.good_standing
+            if row.submission_review_required is not None:
+                member.submission_review_required = row.submission_review_required
 
         sync_member_email_aliases(
             db,
@@ -277,6 +289,7 @@ def create(
     mailing_list_email: str | None = Form(None),
     is_admin: bool = Form(False),
     good_standing: bool = Form(False),
+    submission_review_required: bool = Form(True),
     db: Session = Depends(get_db),
     admin: Member = Depends(require_admin),
 ) -> Response:
@@ -290,6 +303,7 @@ def create(
         mailing_list_email=normalized_mailing_list_email,
         is_admin=is_admin,
         good_standing=good_standing,
+        submission_review_required=submission_review_required,
     )
     errors = validate_member(
         db,
@@ -306,6 +320,7 @@ def create(
         display_name=display_name.strip(),
         is_admin=is_admin,
         good_standing=good_standing,
+        submission_review_required=submission_review_required,
     )
     db.add(member)
     db.flush()
@@ -327,6 +342,7 @@ def create(
             "email": member.email,
             "is_admin": member.is_admin,
             "good_standing": member.good_standing,
+            "submission_review_required": member.submission_review_required,
         },
     )
     db.commit()
@@ -343,6 +359,7 @@ def update(
     mailing_list_email: str | None = Form(None),
     is_admin: bool = Form(False),
     good_standing: bool = Form(False),
+    submission_review_required: bool = Form(True),
     db: Session = Depends(get_db),
     admin: Member = Depends(require_admin),
 ) -> Response:
@@ -357,6 +374,7 @@ def update(
         mailing_list_email=normalized_mailing_list_email,
         is_admin=is_admin,
         good_standing=good_standing,
+        submission_review_required=submission_review_required,
     )
     errors = validate_member(
         db,
@@ -382,6 +400,7 @@ def update(
     member.display_name = display_name.strip()
     member.is_admin = is_admin
     member.good_standing = good_standing
+    member.submission_review_required = submission_review_required
     sync_member_email_aliases(
         db,
         member,
@@ -400,6 +419,7 @@ def update(
             "email": member.email,
             "is_admin": member.is_admin,
             "good_standing": member.good_standing,
+            "submission_review_required": member.submission_review_required,
         },
     )
     db.commit()
@@ -549,6 +569,7 @@ class MemberImportRow:
     display_name: str
     is_admin: bool
     good_standing: bool
+    submission_review_required: bool | None
     status: str
 
 
@@ -643,6 +664,7 @@ def parse_member_import(content: bytes) -> tuple[list[MemberImportRow], list[str
     rows = []
     seen_emails = set()
     has_good_standing = bool({"good_standing", "member"} & fieldnames)
+    has_submission_review_required = "submission_review_required" in fieldnames
     for index, raw_row in enumerate(reader, start=2):
         email = normalize_email(raw_row.get("email") or "")
         paypal_email = normalize_optional_email(raw_row.get("paypal_email"))
@@ -695,6 +717,17 @@ def parse_member_import(content: bytes) -> tuple[list[MemberImportRow], list[str
             errors.append(f"Row {index}: good_standing must be true or false.")
             good_standing = False
 
+        submission_review_required = (
+            parse_bool(raw_row.get("submission_review_required"))
+            if has_submission_review_required
+            else None
+        )
+        if submission_review_required is None and has_submission_review_required:
+            errors.append(
+                f"Row {index}: submission_review_required must be true or false."
+            )
+            submission_review_required = True
+
         status = (raw_row.get("status") or "active").strip().lower()
         if status not in {"active", "inactive"}:
             errors.append(f"Row {index}: status must be active or inactive.")
@@ -709,6 +742,7 @@ def parse_member_import(content: bytes) -> tuple[list[MemberImportRow], list[str
                 display_name=display_name,
                 is_admin=is_admin,
                 good_standing=good_standing,
+                submission_review_required=submission_review_required,
                 status=status,
             )
         )
@@ -850,6 +884,7 @@ def member_form(member: Member) -> dict[str, str]:
         mailing_list_email=email_for_kind(member, MemberEmailKind.MAILING_LIST),
         is_admin=member.is_admin,
         good_standing=member.good_standing,
+        submission_review_required=member.submission_review_required,
     )
 
 
@@ -861,6 +896,7 @@ def member_submission_form(
     mailing_list_email: str | None,
     is_admin: bool,
     good_standing: bool,
+    submission_review_required: bool,
 ) -> dict[str, str]:
     return {
         "display_name": display_name.strip(),
@@ -869,6 +905,7 @@ def member_submission_form(
         "mailing_list_email": normalize_optional_email(mailing_list_email) or "",
         "is_admin": "true" if is_admin else "",
         "good_standing": "true" if good_standing else "",
+        "submission_review_required": "true" if submission_review_required else "",
     }
 
 

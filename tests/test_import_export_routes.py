@@ -164,6 +164,7 @@ def test_member_csv_export_requires_admin_and_contains_members(admin_client) -> 
         assert admin_response.status_code == 200
         assert admin_response.headers["content-disposition"] == 'attachment; filename="members.csv"'
         assert "email,paypal_email,mailing_list_email,display_name" in admin_response.text
+        assert "submission_review_required" in admin_response.text
         assert TEST_MEMBER_EMAIL in admin_response.text
     finally:
         cleanup_import_export_data()
@@ -225,9 +226,9 @@ def test_member_csv_import_creates_updates_and_deactivates(admin_client) -> None
             db.commit()
 
         csv_body = (
-            "email,display_name,is_admin,status\n"
-            f"{TEST_NEW_EMAIL},Imported New,true,active\n"
-            f"{TEST_EXISTING_EMAIL},Existing Updated,false,inactive\n"
+            "email,display_name,is_admin,submission_review_required,status\n"
+            f"{TEST_NEW_EMAIL},Imported New,true,false,active\n"
+            f"{TEST_EXISTING_EMAIL},Existing Updated,false,true,inactive\n"
         )
         response = admin_client.post(
             "/members/import",
@@ -242,10 +243,12 @@ def test_member_csv_import_creates_updates_and_deactivates(admin_client) -> None
             assert new_member is not None
             assert new_member.display_name == "Imported New"
             assert new_member.is_admin
+            assert new_member.submission_review_required is False
             assert new_member.deactivated_at is None
             assert existing_member is not None
             assert existing_member.display_name == "Existing Updated"
             assert not existing_member.is_admin
+            assert existing_member.submission_review_required is True
             assert existing_member.deactivated_at is not None
     finally:
         cleanup_import_export_data()
@@ -270,6 +273,7 @@ def test_member_csv_import_accepts_roster_columns(admin_client) -> None:
             assert member is not None
             assert member.display_name == "Roster Member"
             assert member.good_standing
+            assert member.submission_review_required
             aliases = {
                 alias.kind: alias.email
                 for alias in db.scalars(

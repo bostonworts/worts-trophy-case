@@ -38,13 +38,16 @@ The seeded demo runs at `http://localhost:8011`. Clean it up with:
 ## Member Submissions
 
 1. Log in as a member in good standing.
-2. Open `/me/results/new`.
-3. Submit a result with a BJCP score, HM placement if relevant, notes, and optional recipe/photo attachments.
-4. Confirm the member sees the submission as pending under `/me/submissions`.
-5. Log in as an admin and open `/admin/submissions`.
-6. Approve the submission and confirm it creates a public result.
-7. Submit another disposable result and reject it with a short reason.
-8. Confirm the member can see the rejection reason under `/me/submissions`.
+2. Open `/competitions/new`, add a disposable competition, and confirm it appears under `/competitions`.
+3. Open `/me/results/new`.
+4. Submit a result with a BJCP score, HM placement if relevant, notes, and optional recipe/photo attachments.
+5. Confirm the member sees the submission as pending under `/me/submissions`.
+6. Log in as an admin and open `/admin/submissions`.
+7. Approve the submission and confirm it creates a public result.
+8. Submit another disposable result and reject it with a short reason.
+9. Confirm the member can see the rejection reason under `/me/submissions`.
+10. Edit a trusted test member and clear `Require result submission review`.
+11. Submit a result as that member and confirm it creates a public result without appearing in the pending admin queue.
 
 ## Negative Checks
 
@@ -57,7 +60,7 @@ The seeded demo runs at `http://localhost:8011`. Clean it up with:
 
 1. Download `/admin/data/backup.json`.
 2. Restore it into a throwaway database or local reset environment.
-3. Confirm members, PayPal emails, list emails, good-standing flags, competitions, results, and member submissions came back.
+3. Confirm members, review-required flags, PayPal emails, list emails, good-standing flags, competitions, results, and member submissions came back.
 4. Add a disposable result with an uploaded recipe file.
 5. Archive and restore that result.
 6. Use clear-results only in the throwaway environment and confirm uploaded files are removed.

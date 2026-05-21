@@ -12,8 +12,11 @@
     <a class="button-secondary" href="/results">Results</a>
     {% if request.state.current_member and request.state.current_member.is_admin %}
     <a class="button-secondary" href="/members/new">Add Member</a>
+    {% endif %}
+    {% if request.state.current_member %}
     <a class="button-secondary" href="/competitions/new">Add Competition</a>
-    {% elif request.state.current_member %}
+    {% endif %}
+    {% if request.state.current_member and not request.state.current_member.is_admin %}
     <a class="button-secondary" href="/me/submissions">My Submissions</a>
     {% endif %}
   </div>

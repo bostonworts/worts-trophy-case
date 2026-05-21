@@ -25,6 +25,7 @@
         <th>Roster Emails</th>
         <th>Role</th>
         <th>Results</th>
+        <th>Submission Review</th>
         <th>Status</th>
         <th></th>
       </tr>
@@ -45,6 +46,13 @@
         </td>
         <td>{% if row.member.is_admin %}Admin{% else %}Member{% endif %}</td>
         <td>{{ row.result_count }}</td>
+        <td>
+          {% if row.member.submission_review_required %}
+          Required
+          {% else %}
+          Trusted
+          {% endif %}
+        </td>
         <td>
           {% if row.member.deactivated_at %}Inactive
           {% elif row.member.good_standing %}Good standing

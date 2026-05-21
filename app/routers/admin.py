@@ -598,6 +598,7 @@ def build_backup_payload(db: Session) -> dict[str, Any]:
                 "display_name": member.display_name,
                 "is_admin": member.is_admin,
                 "good_standing": member.good_standing,
+                "submission_review_required": member.submission_review_required,
                 "status": "inactive" if member.deactivated_at else "active",
             }
             for member in members
@@ -816,6 +817,11 @@ def restore_backup_payload(db: Session, payload: Any) -> tuple[str, list[str]]:
         member.is_admin = parse_bool(item.get("is_admin"))
         member.good_standing = (
             parse_bool(item.get("good_standing")) if "good_standing" in item else True
+        )
+        member.submission_review_required = (
+            parse_bool(item.get("submission_review_required"))
+            if "submission_review_required" in item
+            else True
         )
         member.deactivated_at = datetime.now(UTC) if status == "inactive" else None
         sync_backup_member_email_aliases(

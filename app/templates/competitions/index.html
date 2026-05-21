@@ -8,10 +8,12 @@
     <p class="kicker">Competitions</p>
     <h1>Competition calendar</h1>
   </div>
-  {% if request.state.current_member and request.state.current_member.is_admin %}
+  {% if request.state.current_member %}
   <div class="inline-actions">
+    {% if request.state.current_member.is_admin %}
     <a class="button-secondary" href="/competitions.csv">Export CSV</a>
     <a class="button-secondary" href="/competitions/import">Import CSV</a>
+    {% endif %}
     <a class="button" href="/competitions/new">Add Competition</a>
   </div>
   {% endif %}

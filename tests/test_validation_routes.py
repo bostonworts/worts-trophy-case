@@ -3,8 +3,10 @@ from __future__ import annotations
 from datetime import date
 from decimal import Decimal
 
+from fastapi.testclient import TestClient
 from sqlalchemy import delete, func, select
 
+from app.auth import SESSION_COOKIE_NAME, session_token_for_member
 from app.db.models import (
     Competition,
     CompetitionType,
@@ -15,6 +17,8 @@ from app.db.models import (
     StyleSubcategory,
 )
 from app.db.session import SessionLocal
+from app.main import app
+from app.services.csrf import CSRF_COOKIE_NAME, csrf_token_from_signed_cookie
 
 
 TEST_COMPETITION_NAME = "__Validation Competition__"
@@ -84,6 +88,72 @@ def create_validation_records() -> tuple[int, int, int]:
         db.add_all([member, competition, subcategory])
         db.commit()
         return member.id, competition.id, subcategory.id
+
+
+def validation_member_client(member_id: int) -> TestClient:
+    with SessionLocal() as db:
+        member = db.get(Member, member_id)
+        assert member is not None
+        token = session_token_for_member(member)
+    client = TestClient(app)
+    client.cookies.set(SESSION_COOKIE_NAME, token)
+    client.get("/results")
+    return client
+
+
+def validation_csrf_token(client: TestClient) -> str:
+    token = csrf_token_from_signed_cookie(client.cookies.get(CSRF_COOKIE_NAME))
+    assert token is not None
+    return token
+
+
+def test_competition_create_requires_member_login() -> None:
+    response = TestClient(app).get("/competitions/new", follow_redirects=False)
+
+    assert response.status_code == 303
+    assert response.headers["location"] == "/member-login?next=%2Fcompetitions%2Fnew"
+
+
+def test_member_can_create_competition_without_admin_review() -> None:
+    cleanup_validation_data()
+    try:
+        with SessionLocal() as db:
+            member = Member(
+                email=TEST_MEMBER_EMAIL,
+                display_name="Validation Member",
+                good_standing=True,
+            )
+            db.add(member)
+            db.commit()
+            member_id = member.id
+
+        client = validation_member_client(member_id)
+        form_response = client.get("/competitions/new")
+        assert form_response.status_code == 200
+        assert "Add competition" in form_response.text
+
+        response = client.post(
+            "/competitions",
+            data={
+                "name": TEST_COMPETITION_NAME,
+                "date": "2026-05-18",
+                "competition_type": CompetitionType.BJCP_SANCTIONED.value,
+                "url": "https://example.test/competition",
+                "csrf_token": validation_csrf_token(client),
+            },
+            follow_redirects=False,
+        )
+
+        assert response.status_code == 303
+        assert response.headers["location"] == "/competitions"
+        with SessionLocal() as db:
+            competition = db.scalar(
+                select(Competition).where(Competition.name == TEST_COMPETITION_NAME)
+            )
+            assert competition is not None
+            assert competition.url == "https://example.test/competition"
+    finally:
+        cleanup_validation_data()
 
 
 def test_duplicate_competition_renders_validation_error(admin_client) -> None:

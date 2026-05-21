@@ -134,6 +134,7 @@ def create_admin_tools_result() -> int:
             email=ADMIN_MEMBER_EMAIL,
             display_name="Admin Tools Member",
             good_standing=False,
+            submission_review_required=False,
         )
         db.add(member)
         db.flush()
@@ -301,6 +302,7 @@ def test_admin_backup_and_restore_round_trip(admin_client) -> None:
             )
             assert restored_member is not None
             assert restored_member.good_standing is False
+            assert restored_member.submission_review_required is False
             assert restored_competition is not None
             assert restored_result is not None
             assert restored_result.bjcp_score == Decimal("41.0")

@@ -111,13 +111,18 @@ def cleanup_submission_data() -> None:
         db.commit()
 
 
-def create_submission_records(*, good_standing: bool = True) -> tuple[int, int, int]:
+def create_submission_records(
+    *,
+    good_standing: bool = True,
+    submission_review_required: bool = True,
+) -> tuple[int, int, int]:
     cleanup_submission_data()
     with SessionLocal() as db:
         member = Member(
             email=TEST_MEMBER_EMAIL,
             display_name="Submission Member",
             good_standing=good_standing,
+            submission_review_required=submission_review_required,
         )
         competition = Competition(
             name=TEST_COMPETITION_NAME,
@@ -303,6 +308,57 @@ def test_admin_approval_copies_submission_uploads_to_result(admin_client) -> Non
         assert admin_client.get(result_recipe_file_url).status_code == 200
         assert admin_client.get(submission_photo_url).status_code == 200
         assert admin_client.get(submission_recipe_file_url).status_code == 200
+    finally:
+        cleanup_submission_data()
+
+
+def test_trusted_member_submission_publishes_without_admin_review(admin_client) -> None:
+    member_id, competition_id, subcategory_id = create_submission_records(
+        submission_review_required=False,
+    )
+    try:
+        client = member_client(member_id)
+        form_response = client.get("/me/results/new")
+        assert form_response.status_code == 200
+        assert "Submit Result" in form_response.text
+        assert "Submit for Review" not in form_response.text
+
+        submission_id = submit_result(
+            client,
+            competition_id,
+            subcategory_id,
+            files={
+                "photo": ("trusted-entry.png", b"fake image bytes", "image/png"),
+                "recipe_file": ("trusted-recipe.pdf", b"%PDF-1.4 fake pdf", "application/pdf"),
+            },
+        )
+
+        with SessionLocal() as db:
+            submission = db.get(MemberResultSubmission, submission_id)
+            result = db.scalar(select(Result).where(Result.member_id == member_id))
+            pending_submission_id = db.scalar(
+                select(MemberResultSubmission.id)
+                .where(
+                    MemberResultSubmission.member_id == member_id,
+                    MemberResultSubmission.status == MemberResultSubmissionStatus.PENDING,
+                )
+                .limit(1)
+            )
+            assert submission is not None
+            assert result is not None
+            assert pending_submission_id is None
+            assert submission.status == MemberResultSubmissionStatus.APPROVED
+            assert submission.result_id == result.id
+            assert submission.reviewed_by_member_id is None
+            assert result.photo_url is not None
+            assert result.recipe_file_url is not None
+            assert result.photo_url.startswith(f"/uploads/results/{result.id}/photos/")
+            assert result.recipe_file_url.startswith(f"/uploads/results/{result.id}/recipes/")
+            result_photo_url = result.photo_url
+            result_recipe_file_url = result.recipe_file_url
+
+        assert client.get(result_photo_url).status_code == 200
+        assert client.get(result_recipe_file_url).status_code == 200
     finally:
         cleanup_submission_data()
 

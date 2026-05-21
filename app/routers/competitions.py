@@ -11,7 +11,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
-from app.auth import require_admin
+from app.auth import require_admin, require_member
 from app.db.models import Competition, CompetitionType, Member, Result, StyleSubcategory
 from app.db.session import get_db
 from app.domain.scoring import leaderboard_points
@@ -177,8 +177,9 @@ def import_competitions(
 @router.get("/competitions/new", response_class=HTMLResponse)
 def new(
     request: Request,
-    _admin: Member = Depends(require_admin),
+    member: Member = Depends(require_member),
 ) -> HTMLResponse:
+    ensure_member_can_create_competition(member)
     return render_form(request)
 
 
@@ -251,8 +252,9 @@ def create(
     competition_type: CompetitionType = Form(...),
     url: str | None = Form(None),
     db: Session = Depends(get_db),
-    admin: Member = Depends(require_admin),
+    member: Member = Depends(require_member),
 ) -> Response:
+    ensure_member_can_create_competition(member)
     form = {
         "name": name,
         "date": date_.isoformat(),
@@ -278,7 +280,7 @@ def create(
     db.flush()
     record_audit(
         db,
-        actor=admin,
+        actor=member,
         action="create",
         entity_type="competition",
         entity_id=competition.id,
@@ -287,6 +289,15 @@ def create(
     )
     db.commit()
     return RedirectResponse("/competitions", status_code=303)
+
+
+def ensure_member_can_create_competition(member: Member) -> None:
+    if member.is_admin or member.good_standing:
+        return
+    raise HTTPException(
+        status_code=403,
+        detail="Only active members in good standing can add competitions.",
+    )
 
 
 @router.post("/competitions/{competition_id}")

@@ -60,7 +60,9 @@ def new_member_result_submission(
         form_action="/me/results",
         page_title="Submit Result",
         page_heading="Submit result",
-        submit_label="Submit for Review",
+        submit_label=(
+            "Submit for Review" if member.submission_review_required else "Submit Result"
+        ),
         member_locked=member,
     )
 
@@ -110,7 +112,9 @@ def create_member_result_submission(
             form_action="/me/results",
             page_title="Submit Result",
             page_heading="Submit result",
-            submit_label="Submit for Review",
+            submit_label=(
+                "Submit for Review" if member.submission_review_required else "Submit Result"
+            ),
             member_locked=member,
             status_code=400,
         )
@@ -144,10 +148,54 @@ def create_member_result_submission(
             form_action="/me/results",
             page_title="Submit Result",
             page_heading="Submit result",
-            submit_label="Submit for Review",
+            submit_label=(
+                "Submit for Review" if member.submission_review_required else "Submit Result"
+            ),
             member_locked=member,
             status_code=400,
         )
+
+    if not member.submission_review_required:
+        result, publish_errors = approve_submission_with_result(
+            db,
+            submission,
+            reviewer=None,
+        )
+        if publish_errors:
+            db.rollback()
+            return render_form(
+                request,
+                db,
+                form=form,
+                errors=publish_errors,
+                form_action="/me/results",
+                page_title="Submit Result",
+                page_heading="Submit result",
+                submit_label="Submit Result",
+                member_locked=member,
+                status_code=400,
+            )
+        assert result is not None
+        record_audit(
+            db,
+            actor=member,
+            action="submit",
+            entity_type="member_result_submission",
+            entity_id=submission.id,
+            summary="Submitted trusted result.",
+            metadata=submission_audit_metadata(submission),
+        )
+        record_audit(
+            db,
+            actor=member,
+            action="create",
+            entity_type="result",
+            entity_id=result.id,
+            summary="Created result from trusted member submission.",
+            metadata=result_audit_metadata(result),
+        )
+        db.commit()
+        return RedirectResponse(f"/results/{result.id}", status_code=303)
 
     record_audit(
         db,
@@ -275,19 +323,11 @@ def approve_result_submission(
             status_code=400,
         )
 
-    result = Result(
-        member_id=submission.member_id,
-        competition_id=submission.competition_id,
-        style_subcategory_id=submission.style_subcategory_id,
-        bjcp_score=submission.bjcp_score,
-        place=submission.place,
-        placement_scope=submission.placement_scope,
-        recipe_url=submission.recipe_url,
-        notes=submission.notes,
+    result, attachment_errors = approve_submission_with_result(
+        db,
+        submission,
+        reviewer=admin,
     )
-    db.add(result)
-    db.flush()
-    attachment_errors = promote_submission_attachments(submission, result)
     if attachment_errors:
         db.rollback()
         return render_submission_detail(
@@ -297,10 +337,7 @@ def approve_result_submission(
             errors=attachment_errors,
             status_code=400,
         )
-    submission.status = MemberResultSubmissionStatus.APPROVED
-    submission.reviewed_by_member_id = admin.id
-    submission.reviewed_at = datetime.now(UTC)
-    submission.result_id = result.id
+    assert result is not None
     record_audit(
         db,
         actor=admin,
@@ -445,6 +482,35 @@ def save_submission_attachments(
             delete_upload_url(url)
         return [str(error)]
     return []
+
+
+def approve_submission_with_result(
+    db: Session,
+    submission: MemberResultSubmission,
+    *,
+    reviewer: Member | None,
+) -> tuple[Result | None, list[str]]:
+    result = Result(
+        member_id=submission.member_id,
+        competition_id=submission.competition_id,
+        style_subcategory_id=submission.style_subcategory_id,
+        bjcp_score=submission.bjcp_score,
+        place=submission.place,
+        placement_scope=submission.placement_scope,
+        recipe_url=submission.recipe_url,
+        notes=submission.notes,
+    )
+    db.add(result)
+    db.flush()
+    attachment_errors = promote_submission_attachments(submission, result)
+    if attachment_errors:
+        return None, attachment_errors
+
+    submission.status = MemberResultSubmissionStatus.APPROVED
+    submission.reviewed_by_member_id = reviewer.id if reviewer is not None else None
+    submission.reviewed_at = datetime.now(UTC)
+    submission.result_id = result.id
+    return result, []
 
 
 def promote_submission_attachments(
