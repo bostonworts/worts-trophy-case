@@ -27,6 +27,7 @@ from app.services.uploads import delete_upload_url
 
 TEST_COMPETITION_NAME = "__Submission Competition__"
 TEST_MEMBER_EMAIL = "submission-member@example.test"
+TEST_MEMBER_EMAIL_2 = "submission-member-2@example.test"
 TEST_GUIDE_YEAR = 2098
 TEST_CATEGORY_CODE = "S"
 TEST_SUBCATEGORY_CODE = "S1"
@@ -37,7 +38,13 @@ def cleanup_submission_data() -> None:
         competition_ids = list(
             db.scalars(select(Competition.id).where(Competition.name == TEST_COMPETITION_NAME))
         )
-        member_ids = list(db.scalars(select(Member.id).where(Member.email == TEST_MEMBER_EMAIL)))
+        member_ids = list(
+            db.scalars(
+                select(Member.id).where(
+                    Member.email.in_([TEST_MEMBER_EMAIL, TEST_MEMBER_EMAIL_2])
+                )
+            )
+        )
         category = db.scalar(
             select(StyleCategory).where(
                 StyleCategory.guide_year == TEST_GUIDE_YEAR,
@@ -308,6 +315,57 @@ def test_admin_approval_copies_submission_uploads_to_result(admin_client) -> Non
         assert admin_client.get(result_recipe_file_url).status_code == 200
         assert admin_client.get(submission_photo_url).status_code == 200
         assert admin_client.get(submission_recipe_file_url).status_code == 200
+    finally:
+        cleanup_submission_data()
+
+
+def test_admin_can_bulk_approve_pending_submissions(admin_client) -> None:
+    member_id, competition_id, subcategory_id = create_submission_records()
+    try:
+        client = member_client(member_id)
+        first_submission_id = submit_result(client, competition_id, subcategory_id)
+        with SessionLocal() as db:
+            second_member = Member(
+                email=TEST_MEMBER_EMAIL_2,
+                display_name="Second Submission Member",
+                good_standing=True,
+            )
+            db.add(second_member)
+            db.flush()
+            second_submission = MemberResultSubmission(
+                member_id=second_member.id,
+                competition_id=competition_id,
+                style_subcategory_id=subcategory_id,
+                bjcp_score=Decimal("39.0"),
+                place=3,
+                placement_scope=PlacementScope.CATEGORY,
+                notes="Second pending submission.",
+            )
+            db.add(second_submission)
+            db.commit()
+            second_submission_id = second_submission.id
+
+        response = admin_client.post("/admin/submissions/approve-all")
+
+        assert response.status_code == 200
+        assert "Approved 2 pending submissions." in response.text
+        with SessionLocal() as db:
+            submissions = db.scalars(
+                select(MemberResultSubmission).where(
+                    MemberResultSubmission.id.in_(
+                        [first_submission_id, second_submission_id]
+                    )
+                )
+            ).all()
+            result_count = len(
+                db.scalars(
+                    select(Result).where(Result.competition_id == competition_id)
+                ).all()
+            )
+            assert {submission.status for submission in submissions} == {
+                MemberResultSubmissionStatus.APPROVED
+            }
+            assert result_count == 2
     finally:
         cleanup_submission_data()
 

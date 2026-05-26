@@ -250,6 +250,56 @@ def admin_result_submissions(
     db: Session = Depends(get_db),
     _admin: Member = Depends(require_admin),
 ) -> HTMLResponse:
+    return render_admin_submissions(request, db)
+
+
+@router.post("/admin/submissions/approve-all", response_class=HTMLResponse)
+def approve_all_result_submissions(
+    request: Request,
+    db: Session = Depends(get_db),
+    admin: Member = Depends(require_admin),
+) -> HTMLResponse:
+    pending_ids = list(
+        db.scalars(
+            select(MemberResultSubmission.id)
+            .where(MemberResultSubmission.status == MemberResultSubmissionStatus.PENDING)
+            .order_by(MemberResultSubmission.created_at.asc(), MemberResultSubmission.id.asc())
+        )
+    )
+    approved_count = 0
+    errors = []
+    for submission_id in pending_ids:
+        submission = get_submission_or_404(db, submission_id, for_update=True)
+        result, submission_errors = approve_pending_submission(db, submission, admin)
+        if submission_errors:
+            db.rollback()
+            errors.append(
+                f"Submission {submission_id}: {' '.join(submission_errors)}"
+            )
+            continue
+        assert result is not None
+        record_submission_approval_audit(db, submission=submission, result=result, admin=admin)
+        db.commit()
+        approved_count += 1
+
+    summary = f"Approved {approved_count} pending submissions."
+    return render_admin_submissions(
+        request,
+        db,
+        summary=summary,
+        errors=errors,
+        status_code=400 if errors else 200,
+    )
+
+
+def render_admin_submissions(
+    request: Request,
+    db: Session,
+    *,
+    summary: str | None = None,
+    errors: list[str] | None = None,
+    status_code: int = 200,
+) -> HTMLResponse:
     pending_submissions = db.scalars(
         submission_select()
         .where(MemberResultSubmission.status == MemberResultSubmissionStatus.PENDING)
@@ -267,7 +317,10 @@ def admin_result_submissions(
         {
             "pending_submissions": pending_submissions,
             "reviewed_submissions": reviewed_submissions,
+            "summary": summary,
+            "errors": errors or [],
         },
+        status_code=status_code,
     )
 
 
@@ -304,17 +357,10 @@ def approve_result_submission(
             status_code=400,
         )
 
-    errors = validate_result(
-        db,
-        member_id=submission.member_id,
-        competition_id=submission.competition_id,
-        style_subcategory_id=submission.style_subcategory_id,
-        bjcp_score=submission.bjcp_score,
-        place=submission.place,
-        placement_scope=submission.placement_scope,
-        recipe_url=submission.recipe_url,
-    )
+    result, errors = approve_pending_submission(db, submission, admin)
     if errors:
+        db.rollback()
+        submission = get_submission_or_404(db, submission_id)
         return render_submission_detail(
             request,
             submission=submission,
@@ -322,40 +368,8 @@ def approve_result_submission(
             errors=errors,
             status_code=400,
         )
-
-    result, attachment_errors = approve_submission_with_result(
-        db,
-        submission,
-        reviewer=admin,
-    )
-    if attachment_errors:
-        db.rollback()
-        return render_submission_detail(
-            request,
-            submission=submission,
-            admin_view=True,
-            errors=attachment_errors,
-            status_code=400,
-        )
     assert result is not None
-    record_audit(
-        db,
-        actor=admin,
-        action="approve",
-        entity_type="member_result_submission",
-        entity_id=submission.id,
-        summary="Approved member-submitted result.",
-        metadata=submission_audit_metadata(submission),
-    )
-    record_audit(
-        db,
-        actor=admin,
-        action="create",
-        entity_type="result",
-        entity_id=result.id,
-        summary="Created result from member submission.",
-        metadata=result_audit_metadata(result),
-    )
+    record_submission_approval_audit(db, submission=submission, result=result, admin=admin)
     db.commit()
     return RedirectResponse(f"/results/{result.id}", status_code=303)
 
@@ -484,6 +498,26 @@ def save_submission_attachments(
     return []
 
 
+def approve_pending_submission(
+    db: Session,
+    submission: MemberResultSubmission,
+    admin: Member,
+) -> tuple[Result | None, list[str]]:
+    errors = validate_result(
+        db,
+        member_id=submission.member_id,
+        competition_id=submission.competition_id,
+        style_subcategory_id=submission.style_subcategory_id,
+        bjcp_score=submission.bjcp_score,
+        place=submission.place,
+        placement_scope=submission.placement_scope,
+        recipe_url=submission.recipe_url,
+    )
+    if errors:
+        return None, errors
+    return approve_submission_with_result(db, submission, reviewer=admin)
+
+
 def approve_submission_with_result(
     db: Session,
     submission: MemberResultSubmission,
@@ -511,6 +545,33 @@ def approve_submission_with_result(
     submission.reviewed_at = datetime.now(UTC)
     submission.result_id = result.id
     return result, []
+
+
+def record_submission_approval_audit(
+    db: Session,
+    *,
+    submission: MemberResultSubmission,
+    result: Result,
+    admin: Member,
+) -> None:
+    record_audit(
+        db,
+        actor=admin,
+        action="approve",
+        entity_type="member_result_submission",
+        entity_id=submission.id,
+        summary="Approved member-submitted result.",
+        metadata=submission_audit_metadata(submission),
+    )
+    record_audit(
+        db,
+        actor=admin,
+        action="create",
+        entity_type="result",
+        entity_id=result.id,
+        summary="Created result from member submission.",
+        metadata=result_audit_metadata(result),
+    )
 
 
 def promote_submission_attachments(

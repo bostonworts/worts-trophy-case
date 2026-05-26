@@ -19,7 +19,8 @@ The seeded demo runs at `http://localhost:8011`. Clean it up with:
 1. Log in at `/login` as an admin.
 2. Open `/admin` and confirm member login email says `SMTP`.
 3. Open `/members/import`.
-4. Import the roster from the Google Sheets URL, or upload the exported CSV.
+4. Import the roster from the Google Sheets URL, or upload the exported CSV with
+   extra sheet columns left in place.
 5. Preview first, then import.
 6. Spot check at least two rows:
    - A `member=1` row has `Good standing`.
@@ -43,7 +44,7 @@ The seeded demo runs at `http://localhost:8011`. Clean it up with:
 4. Submit a result with a BJCP score, HM placement if relevant, notes, and optional recipe/photo attachments.
 5. Confirm the member sees the submission as pending under `/me/submissions`.
 6. Log in as an admin and open `/admin/submissions`.
-7. Approve the submission and confirm it creates a public result.
+7. Approve the submission from the queue and confirm it creates a public result.
 8. Submit another disposable result and reject it with a short reason.
 9. Confirm the member can see the rejection reason under `/me/submissions`.
 10. Edit a trusted test member and clear `Require result submission review`.

@@ -118,9 +118,9 @@ curl -fsS https://trophycase.worts.club/healthz
 
 ## First Admin
 
-Open `https://trophycase.worts.club/login`, enter the first admin email, and use
-`ADMIN_SETUP_CODE`. After `/admin` works, remove `ADMIN_SETUP_CODE` from `.env`
-and restart web:
+Open `https://trophycase.worts.club/login`, enter the first admin email or one
+of that admin member's roster aliases, and use `ADMIN_SETUP_CODE`. After
+`/admin` works, remove `ADMIN_SETUP_CODE` from `.env` and restart web:
 
 ```sh
 docker compose -f compose.prod.yaml up -d web
@@ -149,10 +149,12 @@ Before inviting members, test a good-standing member and a lapsed/inactive membe
 Good-standing members can submit their own winnings at `/me/results/new`. New
 submissions stay out of the public archive until an admin approves them at
 `/admin/submissions`; approval creates the public result and copies any uploaded
-recipe or photo into the result upload directory. Rejections stay visible to the
-member with the admin's reason. Admins can edit a member and clear
-`Require result submission review`; that member's future submissions publish
-immediately while still keeping an approved submission record.
+recipe or photo into the result upload directory. Admins can approve individual
+rows from the queue or approve all currently pending submissions at once.
+Rejections stay visible to the member with the admin's reason. Admins can edit a
+member and clear `Require result submission review`; that member's future
+submissions publish immediately while still keeping an approved submission
+record.
 
 Logged-in good-standing members can also add competitions at `/competitions/new`.
 New competitions are public immediately; edits, imports, archive, and restore

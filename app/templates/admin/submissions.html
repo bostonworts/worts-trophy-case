@@ -12,8 +12,25 @@
   <div class="inline-actions">
     <a class="button-secondary" href="/admin">Dashboard</a>
     <a class="button-secondary" href="/results">Results</a>
+    {% if pending_submissions %}
+    <form method="post" action="/admin/submissions/approve-all">
+      {% include "_csrf.html" %}
+      <button type="submit">Approve All Pending</button>
+    </form>
+    {% endif %}
   </div>
 </header>
+
+{% if summary %}
+<div class="notice">{{ summary }}</div>
+{% endif %}
+{% if errors %}
+<div class="form-errors" role="alert">
+  {% for error in errors %}
+  <p>{{ error }}</p>
+  {% endfor %}
+</div>
+{% endif %}
 
 <section class="panel">
   <div class="panel-heading">
@@ -56,7 +73,13 @@
           {% endif %}
         </td>
         <td class="table-action">
-          <a class="button-secondary" href="/admin/submissions/{{ submission.id }}">Review</a>
+          <div class="inline-actions">
+            <form method="post" action="/admin/submissions/{{ submission.id }}/approve">
+              {% include "_csrf.html" %}
+              <button type="submit">Approve</button>
+            </form>
+            <a class="button-secondary" href="/admin/submissions/{{ submission.id }}">Review</a>
+          </div>
         </td>
       </tr>
       {% endfor %}

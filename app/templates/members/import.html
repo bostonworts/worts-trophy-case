@@ -34,7 +34,8 @@
         <input id="google_sheet_url" name="google_sheet_url" type="url" placeholder="https://docs.google.com/spreadsheets/d/...">
       </div>
       <div class="field-note field-full">
-        Use either a CSV file or a Google Sheets URL. Columns: {{ columns | join(", ") }}
+        Use either a CSV file or a Google Sheets URL. The importer reads these
+        columns when present and ignores any others: {{ columns | join(", ") }}
       </div>
     </div>
     <div class="form-actions">

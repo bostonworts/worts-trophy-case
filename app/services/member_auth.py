@@ -27,6 +27,9 @@ def normalize_email(value: str) -> str:
 
 def member_for_login_email(db: Session, email: str) -> Member | None:
     normalized = normalize_email(email)
+    member = db.scalar(select(Member).where(Member.email == normalized))
+    if member is not None:
+        return member
     member = db.scalar(
         select(Member)
         .join(MemberEmail, MemberEmail.member_id == Member.id)
@@ -34,7 +37,7 @@ def member_for_login_email(db: Session, email: str) -> Member | None:
     )
     if member is not None:
         return member
-    return db.scalar(select(Member).where(Member.email == normalized))
+    return None
 
 
 def eligible_member_for_login_email(db: Session, email: str) -> Member | None:

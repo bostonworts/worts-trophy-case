@@ -258,8 +258,8 @@ def test_member_csv_import_accepts_roster_columns(admin_client) -> None:
     cleanup_import_export_data()
     try:
         csv_body = (
-            "member,name,paypal_email,list_email\n"
-            f"1,Roster Member,{TEST_PAYPAL_EMAIL},{TEST_LIST_EMAIL}\n"
+            "member,name,paypal_email,list_email,ignore_me,joined_at\n"
+            f"1,Roster Member,{TEST_PAYPAL_EMAIL},{TEST_LIST_EMAIL},ok,2024-01-01\n"
         )
         response = admin_client.post(
             "/members/import",

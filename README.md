@@ -18,18 +18,20 @@ Public pages are available without logging in. Create, edit, archive, and member
 
 Members in good standing can log in at `/member-login` with an email from the
 roster, then land on `/me` for their member profile. The member importer accepts
-a CSV upload or a Google Sheets URL from `docs.google.com` and reads the roster
-columns `member`, `name`, `paypal_email`, and `list_email`; `member` should be
-`1` for members in good standing. In local development without SMTP configured,
-login links and codes are printed to the web container logs. Authenticated form
-posts use CSRF tokens, and member login email requests are rate limited by email
-and client IP.
+a CSV upload or a Google Sheets URL from `docs.google.com`, reads the roster
+columns `member`, `name`, `paypal_email`, and `list_email`, and ignores extra
+sheet columns; `member` should be `1` for members in good standing. In local
+development without SMTP configured, login links and codes are printed to the
+web container logs. Authenticated form posts use CSRF tokens, and member login
+email requests are rate limited by email and client IP.
 
 Good-standing members can add competitions and submit their own results at
 `/me/results/new`. Admins review pending submissions at `/admin/submissions`;
 approval creates the public result and rejection leaves the member a private
-reason to correct and resubmit. Admins can also mark trusted members as no
-longer needing submission review, letting future submissions publish immediately.
+reason to correct and resubmit. The admin submissions page supports inline
+approval and bulk approval for the pending queue. Admins can also mark trusted
+members as no longer needing submission review, letting future submissions
+publish immediately.
 
 Uploaded result photos and recipe files are stored under `/Users/Shared/Docker/trophy-case/uploads` on the host and served locally from `/uploads`.
 

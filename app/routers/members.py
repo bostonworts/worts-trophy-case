@@ -645,7 +645,6 @@ def parse_member_import(content: bytes) -> tuple[list[MemberImportRow], list[str
         missing_fields = {"display_name or name"}
     else:
         missing_fields = set()
-    unknown_fields = fieldnames - MEMBER_IMPORT_COLUMNS
     errors = []
     if missing_fields:
         errors.append(f"Missing required columns: {', '.join(sorted(missing_fields))}.")
@@ -656,8 +655,6 @@ def parse_member_import(content: bytes) -> tuple[list[MemberImportRow], list[str
         )
     if duplicate_fields:
         errors.append(f"Duplicate columns: {', '.join(duplicate_fields)}.")
-    if unknown_fields:
-        errors.append(f"Unknown columns: {', '.join(sorted(unknown_fields))}.")
     if errors:
         return [], errors
 

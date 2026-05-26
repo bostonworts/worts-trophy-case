@@ -166,6 +166,34 @@ def test_admin_login_promotes_matching_alias_to_primary() -> None:
         cleanup_auth_member()
 
 
+def test_admin_can_login_with_roster_alias() -> None:
+    cleanup_auth_member()
+    try:
+        with SessionLocal() as db:
+            member = Member(email=AUTH_EMAIL, display_name="Auth Admin", is_admin=True)
+            db.add(member)
+            db.flush()
+            db.add(
+                MemberEmail(
+                    member=member,
+                    email=MEMBER_LIST_EMAIL,
+                    kind=MemberEmailKind.MAILING_LIST,
+                )
+            )
+            db.commit()
+
+        response = TestClient(app).post(
+            "/login",
+            data={"email": MEMBER_LIST_EMAIL, "next": "/members"},
+            follow_redirects=False,
+        )
+
+        assert response.status_code == 303
+        assert response.headers["location"] == "/members"
+    finally:
+        cleanup_auth_member()
+
+
 def test_admin_login_reports_alias_owned_by_another_member() -> None:
     cleanup_auth_member()
     try:

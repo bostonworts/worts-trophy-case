@@ -21,6 +21,7 @@ from app.services.member_auth import (
     eligible_member_for_login_email,
     ensure_primary_email_alias,
     issue_login_challenge,
+    member_for_login_email,
     normalize_email,
 )
 from app.services.rate_limit import InMemoryRateLimiter
@@ -79,7 +80,7 @@ def login(
             status_code=429,
         )
 
-    member = db.scalar(select(Member).where(Member.email == normalized_email))
+    member = member_for_login_email(db, normalized_email)
     admin_count = db.scalar(select(func.count()).select_from(Member).where(Member.is_admin))
 
     if admin_count == 0:
