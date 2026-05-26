@@ -132,6 +132,68 @@ def test_admin_can_login_and_logout() -> None:
         cleanup_auth_member()
 
 
+def test_admin_login_promotes_matching_alias_to_primary() -> None:
+    cleanup_auth_member()
+    try:
+        with SessionLocal() as db:
+            member = Member(email=AUTH_EMAIL, display_name="Auth Admin", is_admin=True)
+            db.add(member)
+            db.flush()
+            db.add(
+                MemberEmail(
+                    member=member,
+                    email=AUTH_EMAIL,
+                    kind=MemberEmailKind.MAILING_LIST,
+                )
+            )
+            db.commit()
+
+        client = TestClient(app)
+        login_response = client.post(
+            "/login",
+            data={"email": AUTH_EMAIL, "next": "/members"},
+            follow_redirects=False,
+        )
+
+        assert login_response.status_code == 303
+        with SessionLocal() as db:
+            aliases = db.scalars(
+                select(MemberEmail).where(MemberEmail.email == AUTH_EMAIL)
+            ).all()
+            assert len(aliases) == 1
+            assert aliases[0].kind == MemberEmailKind.PRIMARY
+    finally:
+        cleanup_auth_member()
+
+
+def test_admin_login_reports_alias_owned_by_another_member() -> None:
+    cleanup_auth_member()
+    try:
+        with SessionLocal() as db:
+            admin = Member(email=AUTH_EMAIL, display_name="Auth Admin", is_admin=True)
+            other = Member(email=MEMBER_LOGIN_EMAIL, display_name="Other Member")
+            db.add_all([admin, other])
+            db.flush()
+            db.add(
+                MemberEmail(
+                    member=other,
+                    email=AUTH_EMAIL,
+                    kind=MemberEmailKind.MAILING_LIST,
+                )
+            )
+            db.commit()
+
+        response = TestClient(app).post(
+            "/login",
+            data={"email": AUTH_EMAIL, "next": "/members"},
+        )
+
+        assert response.status_code == 403
+        assert "already attached to another member" in response.text
+    finally:
+        cleanup_auth_member()
+
+
 def test_authenticated_post_requires_csrf_token() -> None:
     cleanup_auth_member()
     try:

@@ -66,16 +66,31 @@ def issue_login_challenge(db: Session, *, member: Member, email: str) -> LoginCh
 
 def ensure_primary_email_alias(db: Session, member: Member) -> None:
     normalized = normalize_email(member.email)
-    existing = db.scalar(
+    existing_for_email = db.scalar(
+        select(MemberEmail).where(MemberEmail.email == normalized).limit(1)
+    )
+    existing_primary = db.scalar(
         select(MemberEmail).where(
             MemberEmail.member_id == member.id,
             MemberEmail.kind == MemberEmailKind.PRIMARY,
         )
     )
-    if existing is None:
+
+    if existing_for_email is not None:
+        if existing_for_email.member_id != member.id:
+            raise ValueError("Email is already attached to another member.")
+        if existing_primary is not None and existing_primary.id != existing_for_email.id:
+            db.delete(existing_for_email)
+            db.flush()
+            existing_primary.email = normalized
+            return
+        existing_for_email.kind = MemberEmailKind.PRIMARY
+        return
+
+    if existing_primary is None:
         db.add(MemberEmail(member_id=member.id, kind=MemberEmailKind.PRIMARY, email=normalized))
     else:
-        existing.email = normalized
+        existing_primary.email = normalized
 
 
 def consume_login_code(db: Session, *, email: str, code: str) -> Member | None:

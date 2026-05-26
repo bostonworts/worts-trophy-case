@@ -129,7 +129,17 @@ def login(
             status_code=403,
         )
 
-    ensure_primary_email_alias(db, member)
+    try:
+        ensure_primary_email_alias(db, member)
+    except ValueError:
+        db.rollback()
+        return render_login(
+            request,
+            next_url=target,
+            email=normalized_email,
+            errors=["That email is already attached to another member."],
+            status_code=403,
+        )
     db.commit()
     record_audit(
         db,
