@@ -97,5 +97,5 @@ def member_login_path_for_request(request: Request) -> str:
 
 def safe_redirect_target(value: str | None) -> str:
     if not value or not value.startswith("/") or value.startswith("//"):
-        return "/results"
+        return "/leaderboard"
     return value

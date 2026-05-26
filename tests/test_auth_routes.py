@@ -77,6 +77,9 @@ def restore_admin_states(admin_states: dict[int, bool]) -> None:
 def test_public_pages_do_not_require_login() -> None:
     client = TestClient(app)
 
+    root_response = client.get("/", follow_redirects=False)
+    assert root_response.status_code == 303
+    assert root_response.headers["location"] == "/leaderboard"
     assert client.get("/results").status_code == 200
     assert client.get("/competitions").status_code == 200
     assert client.get("/leaderboard").status_code == 200
@@ -127,6 +130,7 @@ def test_admin_can_login_and_logout() -> None:
         )
 
         assert logout_response.status_code == 303
+        assert logout_response.headers["location"] == "/leaderboard"
         assert client.get("/members", follow_redirects=False).status_code == 303
     finally:
         cleanup_auth_member()

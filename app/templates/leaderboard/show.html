@@ -79,7 +79,6 @@
         <th>Member</th>
         <th>Competition</th>
         <th>Placement</th>
-        <th>Formula</th>
         <th>Total</th>
       </tr>
     </thead>
@@ -93,11 +92,8 @@
           <span class="scope-text">{{ row.scope|humanize }}</span>
         </td>
         <td>
-          {{ row.breakdown.base_points }} x {{ row.breakdown.placement_multiplier }}
-          + {{ row.breakdown.high_profile_bonus }},
-          then x {{ row.breakdown.competition_weight }}
+          <span class="points-pill" title="{{ row.formula }}">{{ row.breakdown.total }} pts</span>
         </td>
-        <td><span class="points-pill">{{ row.breakdown.total }} pts</span></td>
       </tr>
       {% endfor %}
     </tbody>

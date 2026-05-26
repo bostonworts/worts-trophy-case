@@ -71,7 +71,7 @@ RESULT_IMPORT_COLUMNS = {
 
 @router.get("/", include_in_schema=False)
 def root() -> RedirectResponse:
-    return RedirectResponse("/results", status_code=303)
+    return RedirectResponse("/leaderboard", status_code=303)
 
 
 @router.get("/results", response_class=HTMLResponse)

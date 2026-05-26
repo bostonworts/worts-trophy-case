@@ -412,6 +412,11 @@ def test_admin_leaderboard_settings_change_scores(admin_client) -> None:
         assert leaderboard_response.status_code == 200
         assert "Admin Tools Member" in leaderboard_response.text
         assert "10" in leaderboard_response.text
+        assert "<th>Formula</th>" not in leaderboard_response.text
+        assert (
+            'title="(10 x placement multiplier 1 + high-profile bonus 0) '
+            'x competition weight 1"'
+        ) in leaderboard_response.text
     finally:
         cleanup_admin_tools_data()
 

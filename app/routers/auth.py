@@ -45,7 +45,7 @@ member_login_verify_limiter = InMemoryRateLimiter(
 @router.get("/login", response_class=HTMLResponse)
 def login_form(
     request: Request,
-    next_url: str = Query("/results", alias="next"),
+    next_url: str = Query("/leaderboard", alias="next"),
 ) -> HTMLResponse:
     return render_login(request, next_url=safe_redirect_target(next_url))
 
@@ -55,7 +55,7 @@ def login(
     request: Request,
     email: str = Form(...),
     login_code: str = Form(""),
-    next_url: str = Form("/results", alias="next"),
+    next_url: str = Form("/leaderboard", alias="next"),
     db: Session = Depends(get_db),
 ) -> Response:
     target = safe_redirect_target(next_url)
@@ -337,7 +337,7 @@ def my_profile(member: Member = Depends(require_member)) -> RedirectResponse:
 
 @router.post("/logout")
 def logout() -> RedirectResponse:
-    response = RedirectResponse("/results", status_code=303)
+    response = RedirectResponse("/leaderboard", status_code=303)
     clear_session_cookie(response)
     return response
 

@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session, selectinload
 
 from app.db.models import Competition, Result
 from app.db.session import get_db
-from app.domain.scoring import leaderboard_breakdown
+from app.domain.scoring import LeaderboardBreakdown, leaderboard_breakdown
 from app.domain.seasons import Season
 from app.services.leaderboard_settings import load_leaderboard_settings
 from app.templating import templates
@@ -77,6 +77,7 @@ def show(
                 "place": result.place,
                 "scope": result.placement_scope.value if result.placement_scope else "",
                 "breakdown": breakdown,
+                "formula": leaderboard_formula(breakdown),
             }
         )
 
@@ -112,4 +113,13 @@ def show(
             "settings": settings,
             "breakdown_rows": breakdown_rows[:20],
         },
+    )
+
+
+def leaderboard_formula(breakdown: LeaderboardBreakdown) -> str:
+    return (
+        f"({breakdown.base_points} x placement multiplier "
+        f"{breakdown.placement_multiplier} + high-profile bonus "
+        f"{breakdown.high_profile_bonus}) x competition weight "
+        f"{breakdown.competition_weight}"
     )
