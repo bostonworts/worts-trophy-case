@@ -10,6 +10,7 @@ from app.db.models import AuditLog, Member, MemberEmail, MemberEmailKind, Member
 from app.db.session import SessionLocal
 from app.main import app
 from app.core.config import settings
+from app.auth import SESSION_COOKIE_NAME, session_token_for_member
 from app.services.email import EmailDeliveryError
 from app.services.csrf import CSRF_COOKIE_NAME, csrf_token_from_signed_cookie
 
@@ -74,6 +75,16 @@ def restore_admin_states(admin_states: dict[int, bool]) -> None:
         db.commit()
 
 
+def authenticated_client_for_member(member_id: int) -> TestClient:
+    with SessionLocal() as db:
+        member = db.get(Member, member_id)
+        assert member is not None
+        token = session_token_for_member(member)
+    client = TestClient(app)
+    client.cookies.set(SESSION_COOKIE_NAME, token)
+    return client
+
+
 def test_public_pages_do_not_require_login() -> None:
     client = TestClient(app)
 
@@ -100,23 +111,40 @@ def test_admin_page_redirects_to_login() -> None:
     response = client.get("/members", follow_redirects=False)
 
     assert response.status_code == 303
-    assert response.headers["location"] == "/login?next=%2Fmembers"
+    assert response.headers["location"] == "/member-login?next=%2Fmembers"
 
 
-def test_admin_can_login_and_logout() -> None:
+def test_admin_can_login_with_member_email_and_logout(monkeypatch) -> None:
     cleanup_auth_member()
+    sent_logins = []
+    monkeypatch.setattr(
+        "app.routers.auth.send_member_login_code",
+        lambda *, to_email, code, magic_link: sent_logins.append(
+            {"to_email": to_email, "code": code, "magic_link": magic_link}
+        ),
+    )
     try:
         with SessionLocal() as db:
             db.add(Member(email=AUTH_EMAIL, display_name="Auth Admin", is_admin=True))
             db.commit()
 
         client = TestClient(app)
-        login_response = client.post(
-            "/login",
+        request_response = client.post(
+            "/member-login",
             data={"email": AUTH_EMAIL, "next": "/members"},
+        )
+        assert request_response.status_code == 200
+        assert sent_logins and sent_logins[0]["to_email"] == AUTH_EMAIL
+
+        login_response = client.post(
+            "/member-login/verify",
+            data={
+                "email": AUTH_EMAIL,
+                "login_code": sent_logins[0]["code"],
+                "next": "/members",
+            },
             follow_redirects=False,
         )
-
         assert login_response.status_code == 303
         assert login_response.headers["location"] == "/members"
         assert client.get("/members").status_code == 200
@@ -136,42 +164,39 @@ def test_admin_can_login_and_logout() -> None:
         cleanup_auth_member()
 
 
-def test_admin_login_promotes_matching_alias_to_primary() -> None:
+def test_legacy_admin_login_redirects_to_member_login() -> None:
     cleanup_auth_member()
     try:
         with SessionLocal() as db:
             member = Member(email=AUTH_EMAIL, display_name="Auth Admin", is_admin=True)
             db.add(member)
-            db.flush()
-            db.add(
-                MemberEmail(
-                    member=member,
-                    email=AUTH_EMAIL,
-                    kind=MemberEmailKind.MAILING_LIST,
-                )
-            )
             db.commit()
 
         client = TestClient(app)
-        login_response = client.post(
+        get_response = client.get("/login?next=/members", follow_redirects=False)
+        post_response = client.post(
             "/login",
             data={"email": AUTH_EMAIL, "next": "/members"},
             follow_redirects=False,
         )
 
-        assert login_response.status_code == 303
-        with SessionLocal() as db:
-            aliases = db.scalars(
-                select(MemberEmail).where(MemberEmail.email == AUTH_EMAIL)
-            ).all()
-            assert len(aliases) == 1
-            assert aliases[0].kind == MemberEmailKind.PRIMARY
+        assert get_response.status_code == 303
+        assert get_response.headers["location"] == "/member-login?next=%2Fmembers"
+        assert post_response.status_code == 303
+        assert post_response.headers["location"] == "/member-login?next=%2Fmembers"
     finally:
         cleanup_auth_member()
 
 
-def test_admin_can_login_with_roster_alias() -> None:
+def test_admin_can_login_with_member_roster_alias(monkeypatch) -> None:
     cleanup_auth_member()
+    sent_logins = []
+    monkeypatch.setattr(
+        "app.routers.auth.send_member_login_code",
+        lambda *, to_email, code, magic_link: sent_logins.append(
+            {"to_email": to_email, "code": code, "magic_link": magic_link}
+        ),
+    )
     try:
         with SessionLocal() as db:
             member = Member(email=AUTH_EMAIL, display_name="Auth Admin", is_admin=True)
@@ -186,9 +211,21 @@ def test_admin_can_login_with_roster_alias() -> None:
             )
             db.commit()
 
-        response = TestClient(app).post(
-            "/login",
+        client = TestClient(app)
+        request_response = client.post(
+            "/member-login",
             data={"email": MEMBER_LIST_EMAIL, "next": "/members"},
+        )
+        assert request_response.status_code == 200
+        assert sent_logins and sent_logins[0]["to_email"] == MEMBER_LIST_EMAIL
+
+        response = client.post(
+            "/member-login/verify",
+            data={
+                "email": MEMBER_LIST_EMAIL,
+                "login_code": sent_logins[0]["code"],
+                "next": "/members",
+            },
             follow_redirects=False,
         )
 
@@ -198,17 +235,27 @@ def test_admin_can_login_with_roster_alias() -> None:
         cleanup_auth_member()
 
 
-def test_admin_login_reports_alias_owned_by_another_member() -> None:
+def test_member_login_does_not_send_for_alias_owned_by_ineligible_member(monkeypatch) -> None:
     cleanup_auth_member()
+    sent_logins = []
+    monkeypatch.setattr(
+        "app.routers.auth.send_member_login_code",
+        lambda *, to_email, code, magic_link: sent_logins.append(
+            {"to_email": to_email, "code": code, "magic_link": magic_link}
+        ),
+    )
     try:
         with SessionLocal() as db:
-            admin = Member(email=AUTH_EMAIL, display_name="Auth Admin", is_admin=True)
-            other = Member(email=MEMBER_LOGIN_EMAIL, display_name="Other Member")
-            db.add_all([admin, other])
+            member = Member(
+                email=MEMBER_LOGIN_EMAIL,
+                display_name="Other Member",
+                good_standing=False,
+            )
+            db.add(member)
             db.flush()
             db.add(
                 MemberEmail(
-                    member=other,
+                    member=member,
                     email=AUTH_EMAIL,
                     kind=MemberEmailKind.MAILING_LIST,
                 )
@@ -216,12 +263,13 @@ def test_admin_login_reports_alias_owned_by_another_member() -> None:
             db.commit()
 
         response = TestClient(app).post(
-            "/login",
+            "/member-login",
             data={"email": AUTH_EMAIL, "next": "/members"},
         )
 
-        assert response.status_code == 403
-        assert "already attached to another member" in response.text
+        assert response.status_code == 200
+        assert "If that email belongs to a member in good standing" in response.text
+        assert sent_logins == []
     finally:
         cleanup_auth_member()
 
@@ -230,29 +278,25 @@ def test_authenticated_post_requires_csrf_token() -> None:
     cleanup_auth_member()
     try:
         with SessionLocal() as db:
-            db.add(Member(email=AUTH_EMAIL, display_name="Auth Admin", is_admin=True))
+            member = Member(email=AUTH_EMAIL, display_name="Auth Admin", is_admin=True)
+            db.add(member)
             db.commit()
+            member_id = member.id
 
-        client = TestClient(app)
-        login_response = client.post(
-            "/login",
-            data={"email": AUTH_EMAIL, "next": "/admin/data"},
-            follow_redirects=False,
-        )
+        client = authenticated_client_for_member(member_id)
         response = client.post(
             "/admin/data/clear-results",
             data={"confirm_text": "CLEAR RESULTS"},
             follow_redirects=False,
         )
 
-        assert login_response.status_code == 303
         assert response.status_code == 403
         assert response.json()["detail"] == "Invalid CSRF token."
     finally:
         cleanup_auth_member()
 
 
-def test_admin_login_code_can_be_required(monkeypatch) -> None:
+def test_existing_admin_setup_login_redirects_to_member_login(monkeypatch) -> None:
     cleanup_auth_member()
     monkeypatch.setattr(settings, "admin_login_code", "secret-code")
     try:
@@ -261,37 +305,28 @@ def test_admin_login_code_can_be_required(monkeypatch) -> None:
             db.commit()
 
         client = TestClient(app)
-        bad_response = client.post(
-            "/login",
-            data={"email": AUTH_EMAIL, "next": "/members", "login_code": "bad"},
-        )
-        good_response = client.post(
+        response = client.post(
             "/login",
             data={"email": AUTH_EMAIL, "next": "/members", "login_code": "secret-code"},
             follow_redirects=False,
         )
 
-        assert bad_response.status_code == 403
-        assert "Enter the admin login code." in bad_response.text
-        assert good_response.status_code == 303
-        assert good_response.headers["location"] == "/members"
+        assert response.status_code == 303
+        assert response.headers["location"] == "/member-login?next=%2Fmembers"
     finally:
         cleanup_auth_member()
 
 
-def test_admin_login_attempts_are_rate_limited(monkeypatch) -> None:
+def test_first_admin_setup_attempts_are_rate_limited(monkeypatch) -> None:
     cleanup_auth_member()
-    monkeypatch.setattr(settings, "admin_login_code", "secret-code")
+    admin_states = remove_active_admins_temporarily()
+    monkeypatch.setattr(settings, "admin_setup_code", "setup-secret")
     try:
-        with SessionLocal() as db:
-            db.add(Member(email=AUTH_EMAIL, display_name="Auth Admin", is_admin=True))
-            db.commit()
-
         client = TestClient(app)
         responses = [
             client.post(
                 "/login",
-                data={"email": AUTH_EMAIL, "next": "/members", "login_code": "bad"},
+                data={"email": FIRST_ADMIN_EMAIL, "next": "/members", "login_code": "bad"},
             )
             for _ in range(settings.admin_login_attempt_limit + 1)
         ]
@@ -303,6 +338,7 @@ def test_admin_login_attempts_are_rate_limited(monkeypatch) -> None:
         assert "Too many login attempts" in responses[-1].text
     finally:
         cleanup_auth_member()
+        restore_admin_states(admin_states)
 
 
 def test_first_admin_bootstrap_requires_setup_code(monkeypatch) -> None:

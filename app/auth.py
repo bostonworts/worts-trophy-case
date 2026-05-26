@@ -62,7 +62,7 @@ def require_admin(
     if member is None or not member.is_admin or member.deactivated_at is not None:
         raise HTTPException(
             status_code=303,
-            headers={"Location": login_path_for_request(request)},
+            headers={"Location": member_login_path_for_request(request)},
         )
     return member
 
@@ -82,10 +82,7 @@ def require_member(
 
 
 def login_path_for_request(request: Request) -> str:
-    target = request.url.path
-    if request.url.query:
-        target = f"{target}?{request.url.query}"
-    return f"/login?next={quote(target, safe='')}"
+    return member_login_path_for_request(request)
 
 
 def member_login_path_for_request(request: Request) -> str:

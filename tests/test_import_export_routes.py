@@ -160,7 +160,7 @@ def test_member_csv_export_requires_admin_and_contains_members(admin_client) -> 
         admin_response = admin_client.get("/members.csv")
 
         assert public_response.status_code == 303
-        assert public_response.headers["location"].startswith("/login")
+        assert public_response.headers["location"].startswith("/member-login")
         assert admin_response.status_code == 200
         assert admin_response.headers["content-disposition"] == 'attachment; filename="members.csv"'
         assert "email,paypal_email,mailing_list_email,display_name" in admin_response.text
@@ -206,7 +206,7 @@ def test_competition_csv_export_requires_admin_and_contains_competitions(admin_c
         admin_response = admin_client.get("/competitions.csv")
 
         assert public_response.status_code == 303
-        assert public_response.headers["location"].startswith("/login")
+        assert public_response.headers["location"].startswith("/member-login")
         assert admin_response.status_code == 200
         assert admin_response.headers["content-disposition"] == (
             'attachment; filename="competitions.csv"'

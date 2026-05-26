@@ -12,7 +12,7 @@ from app.main import app
 from app.routers.auth import reset_member_login_rate_limits
 from app.core.config import settings
 from app.services.csrf import CSRF_COOKIE_NAME, csrf_token_from_signed_cookie
-from app.auth import SESSION_COOKIE_NAME
+from app.auth import SESSION_COOKIE_NAME, session_token_for_member
 
 
 ADMIN_EMAIL = "test-admin@example.test"
@@ -54,16 +54,14 @@ def reset_app_settings() -> Generator[None]:
 def admin_client() -> Generator[TestClient]:
     cleanup_admin()
     with SessionLocal() as db:
-        db.add(Member(email=ADMIN_EMAIL, display_name="Test Admin", is_admin=True))
+        member = Member(email=ADMIN_EMAIL, display_name="Test Admin", is_admin=True)
+        db.add(member)
         db.commit()
+        token = session_token_for_member(member)
 
     client = CsrfTestClient(app)
-    response = client.post(
-        "/login",
-        data={"email": ADMIN_EMAIL, "next": "/results"},
-        follow_redirects=False,
-    )
-    assert response.status_code == 303
+    client.cookies.set(SESSION_COOKIE_NAME, token)
+    client.get("/results")
     try:
         yield client
     finally:

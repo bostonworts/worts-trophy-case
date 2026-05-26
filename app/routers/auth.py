@@ -46,8 +46,12 @@ member_login_verify_limiter = InMemoryRateLimiter(
 def login_form(
     request: Request,
     next_url: str = Query("/leaderboard", alias="next"),
+    db: Session = Depends(get_db),
 ) -> HTMLResponse:
-    return render_login(request, next_url=safe_redirect_target(next_url))
+    target = safe_redirect_target(next_url)
+    if admin_member_count(db) > 0:
+        return RedirectResponse(member_login_path_for_target(target), status_code=303)
+    return render_login(request, next_url=target)
 
 
 @router.post("/login")
@@ -60,6 +64,10 @@ def login(
 ) -> Response:
     target = safe_redirect_target(next_url)
     normalized_email = normalize_email(email)
+    admin_count = admin_member_count(db)
+
+    if admin_count > 0:
+        return RedirectResponse(member_login_path_for_target(target), status_code=303)
 
     if not settings.local_login_enabled:
         return render_login(
@@ -81,36 +89,25 @@ def login(
         )
 
     member = member_for_login_email(db, normalized_email)
-    admin_count = db.scalar(select(func.count()).select_from(Member).where(Member.is_admin))
 
-    if admin_count == 0:
-        if not settings.admin_setup_code:
-            return render_login(
-                request,
-                next_url=target,
-                email=normalized_email,
-                errors=["First admin setup is disabled."],
-                status_code=403,
-            )
-        if login_code != settings.admin_setup_code:
-            return render_login(
-                request,
-                next_url=target,
-                email=normalized_email,
-                errors=["Enter the first-admin setup code."],
-                status_code=403,
-            )
-
-    elif settings.admin_login_code and login_code != settings.admin_login_code:
+    if not settings.admin_setup_code:
         return render_login(
             request,
             next_url=target,
             email=normalized_email,
-            errors=["Enter the admin login code."],
+            errors=["First admin setup is disabled."],
+            status_code=403,
+        )
+    if login_code != settings.admin_setup_code:
+        return render_login(
+            request,
+            next_url=target,
+            email=normalized_email,
+            errors=["Enter the first-admin setup code."],
             status_code=403,
         )
 
-    if member is None and admin_count == 0:
+    if member is None:
         member = Member(
             email=normalized_email,
             display_name=display_name_from_email(normalized_email),
@@ -118,17 +115,9 @@ def login(
         )
         db.add(member)
         db.flush()
-    elif member is not None and admin_count == 0:
+    else:
         member.is_admin = True
         member.deactivated_at = None
-    elif member is None or not member.is_admin or member.deactivated_at is not None:
-        return render_login(
-            request,
-            next_url=target,
-            email=normalized_email,
-            errors=["Use an active admin member email."],
-            status_code=403,
-        )
 
     try:
         ensure_primary_email_alias(db, member)
@@ -357,7 +346,7 @@ def render_login(
             "next_url": next_url,
             "email": email,
             "errors": errors or [],
-            "login_code_required": bool(settings.admin_login_code or settings.admin_setup_code),
+            "login_code_required": bool(settings.admin_setup_code),
         },
         status_code=status_code,
     )
@@ -403,6 +392,14 @@ def member_login_rate_limit_key(request: Request, action: str, email: str) -> st
 def admin_login_rate_limit_key(request: Request, email: str) -> str:
     client_host = request.client.host if request.client else "unknown"
     return f"admin:{client_host}:{normalize_email(email)}"
+
+
+def admin_member_count(db: Session) -> int:
+    return db.scalar(select(func.count()).select_from(Member).where(Member.is_admin)) or 0
+
+
+def member_login_path_for_target(target: str) -> str:
+    return f"/member-login?{urlencode({'next': target})}"
 
 
 def member_login_token_rate_limit_key(request: Request, action: str, token: str) -> str:

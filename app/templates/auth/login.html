@@ -1,14 +1,14 @@
 {% extends "base.html" %}
 
-{% block title %}Admin Login - Trophy Case{% endblock %}
+{% block title %}First Admin Setup - Trophy Case{% endblock %}
 
 {% block content %}
 <header class="page-header">
   <div>
     <p class="kicker">Admin</p>
-    <h1>Login</h1>
+    <h1>First admin setup</h1>
   </div>
-  <a class="button-secondary" href="/member-login">Member Login</a>
+  <a class="button-secondary" href="/member-login">Login</a>
 </header>
 
 <form class="panel auth-panel" method="post" action="/login">
@@ -28,7 +28,7 @@
     </div>
     {% if login_code_required %}
     <div class="field field-full">
-      <label for="login_code">Admin Login Code</label>
+      <label for="login_code">Setup Code</label>
       <input id="login_code" name="login_code" type="password" autocomplete="current-password" required>
     </div>
     {% endif %}

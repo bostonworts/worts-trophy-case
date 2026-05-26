@@ -256,7 +256,7 @@ def test_admin_dashboard_requires_admin(admin_client) -> None:
     admin_response = admin_client.get("/admin")
 
     assert public_response.status_code == 303
-    assert public_response.headers["location"].startswith("/login")
+    assert public_response.headers["location"].startswith("/member-login")
     assert admin_response.status_code == 200
     assert "Dashboard" in admin_response.text
     assert "Data Tools" in admin_response.text
