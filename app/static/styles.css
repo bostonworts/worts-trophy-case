@@ -331,6 +331,49 @@ tr:last-child td {
   min-height: 36px;
 }
 
+.choice-results {
+  display: grid;
+  max-height: 220px;
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: #fffdf8;
+  box-shadow: 0 12px 24px rgb(24 33 47 / 0.08);
+}
+
+.choice-results[hidden] {
+  display: none;
+}
+
+.choice-result,
+.choice-result-empty {
+  width: 100%;
+  min-height: 36px;
+  padding: 8px 10px;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  border-radius: 0;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+}
+
+.choice-result:last-child,
+.choice-result-empty:last-child {
+  border-bottom: 0;
+}
+
+.choice-result:hover,
+.choice-result:focus {
+  background: rgb(185 131 46 / 0.12);
+  outline: none;
+}
+
+.choice-result-empty {
+  color: var(--muted);
+}
+
 .field-full {
   grid-column: 1 / -1;
 }

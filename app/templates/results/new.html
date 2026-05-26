@@ -42,6 +42,7 @@
     <div class="field">
       <label for="member_filter">Member</label>
       <input class="choice-filter" id="member_filter" type="search" autocomplete="off" data-controls="member_id">
+      <div class="choice-results" id="member_filter_results" role="listbox" hidden></div>
       <select id="member_id" name="member_id" required>
         <option value="" {% if not form.get('member_id') %}selected{% endif %}>Choose member</option>
         {% for member in members %}
@@ -55,6 +56,7 @@
     <div class="field">
       <label for="competition_filter">Competition</label>
       <input class="choice-filter" id="competition_filter" type="search" autocomplete="off" data-controls="competition_id">
+      <div class="choice-results" id="competition_filter_results" role="listbox" hidden></div>
       <select id="competition_id" name="competition_id" required>
         <option value="" {% if not form.get('competition_id') %}selected{% endif %}>Choose competition</option>
         {% for competition in competitions %}
@@ -67,6 +69,7 @@
     <div class="field field-full">
       <label for="style_filter">Style</label>
       <input class="choice-filter" id="style_filter" type="search" autocomplete="off" data-controls="style_subcategory_id">
+      <div class="choice-results" id="style_filter_results" role="listbox" hidden></div>
       <select id="style_subcategory_id" name="style_subcategory_id" required>
         <option value="" {% if not form.get('style_subcategory_id') %}selected{% endif %}>Choose style</option>
         {% for subcategory in subcategories %}
@@ -139,17 +142,97 @@
   </div>
 </form>
 <script>
+  const maxChoiceMatches = 8;
+
   for (const input of document.querySelectorAll(".choice-filter")) {
     const select = document.getElementById(input.dataset.controls);
-    input.addEventListener("input", () => {
+    const results = document.getElementById(`${input.id}_results`);
+    if (!select || !results) {
+      continue;
+    }
+
+    const choices = Array.from(select.options)
+      .filter((option) => option.value)
+      .map((option) => ({
+        value: option.value,
+        label: option.textContent.trim(),
+        search: (option.dataset.search || option.textContent).toLowerCase(),
+      }));
+
+    const selectChoice = (choice, { syncInput = true, notify = true } = {}) => {
+      select.value = choice.value;
+      if (syncInput) {
+        input.value = choice.label;
+        results.hidden = true;
+      }
+      if (notify) {
+        select.dispatchEvent(new Event("change", { bubbles: true }));
+      }
+    };
+
+    const matchingChoices = () => {
       const query = input.value.trim().toLowerCase();
-      for (const option of select.options) {
-        if (!option.value) {
-          option.hidden = false;
-          continue;
+      if (!query) {
+        return [];
+      }
+      return choices.filter((choice) => choice.search.includes(query));
+    };
+
+    const renderMatches = () => {
+      const matches = matchingChoices();
+      results.replaceChildren();
+      if (!input.value.trim()) {
+        results.hidden = true;
+        return;
+      }
+
+      if (matches.length === 0) {
+        select.value = "";
+        const empty = document.createElement("div");
+        empty.className = "choice-result-empty";
+        empty.textContent = "No matches";
+        results.append(empty);
+        results.hidden = false;
+        return;
+      }
+
+      selectChoice(matches[0], { syncInput: false, notify: false });
+      for (const choice of matches.slice(0, maxChoiceMatches)) {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "choice-result";
+        button.role = "option";
+        button.textContent = choice.label;
+        button.addEventListener("click", () => selectChoice(choice));
+        results.append(button);
+      }
+      results.hidden = false;
+    };
+
+    input.addEventListener("input", renderMatches);
+    input.addEventListener("focus", renderMatches);
+    input.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") {
+        results.hidden = true;
+      }
+      if (event.key === "Enter" && !results.hidden) {
+        const firstMatch = results.querySelector(".choice-result");
+        if (firstMatch) {
+          event.preventDefault();
+          firstMatch.click();
         }
-        const haystack = (option.dataset.search || option.textContent).toLowerCase();
-        option.hidden = query.length > 0 && !haystack.includes(query);
+      }
+    });
+    select.addEventListener("change", () => {
+      const selected = select.selectedOptions[0];
+      if (selected?.value) {
+        input.value = selected.textContent.trim();
+      }
+      results.hidden = true;
+    });
+    document.addEventListener("click", (event) => {
+      if (!input.contains(event.target) && !results.contains(event.target)) {
+        results.hidden = true;
       }
     });
   }

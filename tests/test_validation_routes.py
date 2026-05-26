@@ -258,6 +258,10 @@ def test_result_form_has_searchable_selectors(admin_client) -> None:
         assert 'data-controls="member_id"' in response.text
         assert 'data-controls="competition_id"' in response.text
         assert 'data-controls="style_subcategory_id"' in response.text
+        assert 'id="member_filter_results"' in response.text
+        assert 'id="competition_filter_results"' in response.text
+        assert 'id="style_filter_results"' in response.text
+        assert "maxChoiceMatches" in response.text
         assert "Choose member" in response.text
         assert "Choose competition" in response.text
         assert "Choose style" in response.text

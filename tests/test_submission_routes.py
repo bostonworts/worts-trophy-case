@@ -210,6 +210,8 @@ def test_member_can_submit_result_and_admin_can_approve(admin_client) -> None:
         assert form_response.status_code == 200
         assert "Submit result" in form_response.text
         assert "Submission Member" in form_response.text
+        assert TEST_MEMBER_EMAIL not in form_response.text
+        assert 'data-controls="member_id"' not in form_response.text
         assert "HM" in form_response.text
 
         submission_id = submit_result(client, competition_id, subcategory_id)
