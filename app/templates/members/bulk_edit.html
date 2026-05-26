@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+
+{% block title %}Bulk Edit Members - Trophy Case{% endblock %}
+
+{% block content %}
+<header class="page-header">
+  <div>
+    <p class="kicker">Roster</p>
+    <h1>Bulk edit members</h1>
+  </div>
+  <div class="inline-actions">
+    <a class="button-secondary" href="/members">Members</a>
+  </div>
+</header>
+
+<form class="panel bulk-edit-panel" method="post" action="/members/bulk-edit">
+  {% include "_csrf.html" %}
+  {% if errors %}
+  <div class="form-errors" role="alert">
+    {% for error in errors %}
+    <p>{{ error }}</p>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <div class="bulk-toolbar">
+    <div class="field bulk-filter">
+      <label for="member_bulk_filter">Filter Members</label>
+      <input id="member_bulk_filter" type="search" autocomplete="off" data-member-filter>
+    </div>
+    <div class="inline-actions">
+      <button class="button-secondary" type="button" data-review-set="false">Trust Visible</button>
+      <button class="button-secondary" type="button" data-review-set="true">Require Review Visible</button>
+      <button type="submit">Save Changes</button>
+    </div>
+  </div>
+
+  {% if member_rows %}
+  <table class="bulk-member-table">
+    <thead>
+      <tr>
+        <th>Member</th>
+        <th>Email</th>
+        <th>Roster Emails</th>
+        <th>Admin</th>
+        <th>Good Standing</th>
+        <th>Review Required</th>
+        <th>Active</th>
+        <th>Results</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in member_rows %}
+      {% set member = row.member %}
+      {% set form = row.form %}
+      {% set locked_self = request.state.current_member and request.state.current_member.id == member.id %}
+      <tr data-member-row data-search="{{ form.get('display_name', '') }} {{ form.get('email', '') }} {{ form.get('paypal_email', '') }} {{ form.get('mailing_list_email', '') }}">
+        <td>
+          <input type="hidden" name="member_id" value="{{ member.id }}">
+          <input class="bulk-member-name" name="display_name_{{ member.id }}" value="{{ form.get('display_name', '') }}" required aria-label="Display name for {{ member.display_name }}">
+        </td>
+        <td>
+          <input class="bulk-member-email" name="email_{{ member.id }}" type="email" value="{{ form.get('email', '') }}" required aria-label="Primary email for {{ member.display_name }}">
+        </td>
+        <td>
+          <div class="bulk-email-grid">
+            <input class="bulk-member-email" name="paypal_email_{{ member.id }}" type="email" value="{{ form.get('paypal_email', '') }}" placeholder="PayPal" aria-label="PayPal email for {{ member.display_name }}">
+            <input class="bulk-member-email" name="mailing_list_email_{{ member.id }}" type="email" value="{{ form.get('mailing_list_email', '') }}" placeholder="List" aria-label="List email for {{ member.display_name }}">
+          </div>
+        </td>
+        <td class="bulk-check">
+          {% if locked_self %}
+          <input type="hidden" name="is_admin_{{ member.id }}" value="true">
+          <input type="checkbox" checked disabled aria-label="Admin for {{ member.display_name }}">
+          {% else %}
+          <input name="is_admin_{{ member.id }}" type="checkbox" value="true" {% if form.get('is_admin') %}checked{% endif %} aria-label="Admin for {{ member.display_name }}">
+          {% endif %}
+        </td>
+        <td class="bulk-check">
+          <input name="good_standing_{{ member.id }}" type="checkbox" value="true" {% if form.get('good_standing') %}checked{% endif %} aria-label="Good standing for {{ member.display_name }}">
+        </td>
+        <td class="bulk-check">
+          <input name="submission_review_required_{{ member.id }}" type="checkbox" value="true" {% if form.get('submission_review_required') %}checked{% endif %} data-review-required aria-label="Submission review required for {{ member.display_name }}">
+        </td>
+        <td class="bulk-check">
+          {% if locked_self %}
+          <input type="hidden" name="active_{{ member.id }}" value="true">
+          <input type="checkbox" checked disabled aria-label="Active for {{ member.display_name }}">
+          {% else %}
+          <input name="active_{{ member.id }}" type="checkbox" value="true" {% if form.get('active') %}checked{% endif %} aria-label="Active for {{ member.display_name }}">
+          {% endif %}
+        </td>
+        <td>{{ row.result_count }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <div class="form-actions bulk-form-actions">
+    <button type="submit">Save Changes</button>
+  </div>
+  {% else %}
+  <div class="empty">No members yet.</div>
+  {% endif %}
+</form>
+
+<script>
+  const memberFilter = document.querySelector("[data-member-filter]");
+  const memberRows = Array.from(document.querySelectorAll("[data-member-row]"));
+
+  memberFilter?.addEventListener("input", () => {
+    const query = memberFilter.value.trim().toLowerCase();
+    for (const row of memberRows) {
+      row.hidden = Boolean(query) && !row.dataset.search.toLowerCase().includes(query);
+    }
+  });
+
+  for (const button of document.querySelectorAll("[data-review-set]")) {
+    button.addEventListener("click", () => {
+      const checked = button.dataset.reviewSet === "true";
+      for (const row of memberRows.filter((memberRow) => !memberRow.hidden)) {
+        const input = row.querySelector("[data-review-required]");
+        if (input) {
+          input.checked = checked;
+        }
+      }
+    });
+  }
+</script>
+{% endblock %}

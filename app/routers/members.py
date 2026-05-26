@@ -57,21 +57,15 @@ def index(
     db: Session = Depends(get_db),
     admin: Member = Depends(require_admin),
 ) -> HTMLResponse:
-    rows = db.execute(
-        select(Member, func.count(Result.id))
-        .outerjoin(Result)
-        .options(selectinload(Member.emails))
-        .group_by(Member.id)
-        .order_by(Member.deactivated_at.is_not(None), Member.display_name)
-    ).all()
-    member_rows = [
-        {"member": member, "result_count": result_count}
-        for member, result_count in rows
-    ]
+    bulk_updated = request.query_params.get("bulk_updated")
+    summary = None
+    if bulk_updated is not None and bulk_updated.isdigit():
+        count = int(bulk_updated)
+        summary = f"Updated {count} member{'s' if count != 1 else ''}."
     return templates.TemplateResponse(
         request,
         "members/index.html",
-        {"member_rows": member_rows},
+        {"member_rows": member_list_rows(db), "summary": summary},
     )
 
 
@@ -224,6 +218,40 @@ def new(
     _admin: Member = Depends(require_admin),
 ) -> HTMLResponse:
     return render_form(request)
+
+
+@router.get("/members/bulk-edit", response_class=HTMLResponse)
+def bulk_edit(
+    request: Request,
+    db: Session = Depends(get_db),
+    _admin: Member = Depends(require_admin),
+) -> HTMLResponse:
+    return render_bulk_edit(request, db)
+
+
+@router.post("/members/bulk-edit")
+async def bulk_update(
+    request: Request,
+    db: Session = Depends(get_db),
+    admin: Member = Depends(require_admin),
+) -> Response:
+    form_data = await request.form()
+    updates, errors, forms_by_member_id = parse_bulk_member_updates(db, form_data, admin=admin)
+    if errors:
+        return render_bulk_edit(
+            request,
+            db,
+            errors=errors,
+            forms_by_member_id=forms_by_member_id,
+            status_code=400,
+        )
+
+    updated_count = 0
+    for update in updates:
+        if apply_bulk_member_update(db, update, actor=admin):
+            updated_count += 1
+    db.commit()
+    return RedirectResponse(f"/members?bulk_updated={updated_count}", status_code=303)
 
 
 @router.get("/members/{member_id}", response_class=HTMLResponse)
@@ -468,6 +496,220 @@ def reactivate(
     return RedirectResponse("/members", status_code=303)
 
 
+def member_list_rows(
+    db: Session,
+    *,
+    forms_by_member_id: dict[int, dict[str, str]] | None = None,
+) -> list[dict[str, object]]:
+    rows = db.execute(
+        select(Member, func.count(Result.id))
+        .outerjoin(Result)
+        .options(selectinload(Member.emails))
+        .group_by(Member.id)
+        .order_by(Member.deactivated_at.is_not(None), Member.display_name)
+    ).all()
+    return [
+        {
+            "member": member,
+            "result_count": result_count,
+            "form": (
+                forms_by_member_id.get(member.id)
+                if forms_by_member_id and member.id in forms_by_member_id
+                else bulk_member_form(member)
+            ),
+        }
+        for member, result_count in rows
+    ]
+
+
+def render_bulk_edit(
+    request: Request,
+    db: Session,
+    *,
+    errors: list[str] | None = None,
+    forms_by_member_id: dict[int, dict[str, str]] | None = None,
+    status_code: int = 200,
+) -> HTMLResponse:
+    return templates.TemplateResponse(
+        request,
+        "members/bulk_edit.html",
+        {
+            "member_rows": member_list_rows(db, forms_by_member_id=forms_by_member_id),
+            "errors": errors or [],
+        },
+        status_code=status_code,
+    )
+
+
+def parse_bulk_member_updates(
+    db: Session,
+    form_data,
+    *,
+    admin: Member,
+) -> tuple[list[BulkMemberUpdate], list[str], dict[int, dict[str, str]]]:
+    errors = []
+    updates = []
+    forms_by_member_id: dict[int, dict[str, str]] = {}
+    member_ids = []
+    seen_member_ids = set()
+    for raw_member_id in form_data.getlist("member_id"):
+        try:
+            member_id = int(str(raw_member_id))
+        except ValueError:
+            errors.append("Member list contains an invalid member id.")
+            continue
+        if member_id in seen_member_ids:
+            errors.append(f"Member id {member_id} was submitted more than once.")
+            continue
+        seen_member_ids.add(member_id)
+        member_ids.append(member_id)
+
+    if not member_ids:
+        errors.append("Choose at least one member to update.")
+
+    submitted_emails: dict[str, list[str]] = {}
+    for member_id in member_ids:
+        member = db.get(Member, member_id)
+        if member is None:
+            errors.append(f"Member id {member_id} was not found.")
+            continue
+
+        display_name = str(form_data.get(f"display_name_{member.id}") or "").strip()
+        email = normalize_email(str(form_data.get(f"email_{member.id}") or ""))
+        paypal_email = normalize_optional_email(
+            str(form_data.get(f"paypal_email_{member.id}") or "")
+        )
+        mailing_list_email = normalize_optional_email(
+            str(form_data.get(f"mailing_list_email_{member.id}") or "")
+        )
+        is_admin = field_checked(form_data, f"is_admin_{member.id}")
+        good_standing = field_checked(form_data, f"good_standing_{member.id}")
+        submission_review_required = field_checked(
+            form_data,
+            f"submission_review_required_{member.id}",
+        )
+        active = field_checked(form_data, f"active_{member.id}")
+        if member.id == admin.id:
+            is_admin = True
+            active = True
+
+        forms_by_member_id[member.id] = bulk_member_form_from_values(
+            display_name=display_name,
+            email=email,
+            paypal_email=paypal_email,
+            mailing_list_email=mailing_list_email,
+            is_admin=is_admin,
+            good_standing=good_standing,
+            submission_review_required=submission_review_required,
+            active=active,
+        )
+        row_errors = validate_member(
+            db,
+            display_name=display_name,
+            email=email,
+            paypal_email=paypal_email,
+            mailing_list_email=mailing_list_email,
+            exclude_id=member.id,
+        )
+        errors.extend(
+            f"{display_name or member.display_name}: {error}"
+            for error in row_errors
+        )
+        for label, value in [
+            ("Email", email),
+            ("PayPal email", paypal_email),
+            ("Mailing list email", mailing_list_email),
+        ]:
+            if not value:
+                continue
+            submitted_emails.setdefault(value, []).append(
+                f"{display_name or member.display_name} {label}"
+            )
+
+        updates.append(
+            BulkMemberUpdate(
+                member=member,
+                display_name=display_name,
+                email=email,
+                paypal_email=paypal_email,
+                mailing_list_email=mailing_list_email,
+                is_admin=is_admin,
+                good_standing=good_standing,
+                submission_review_required=submission_review_required,
+                active=active,
+            )
+        )
+
+    for email, labels in submitted_emails.items():
+        if len(labels) > 1:
+            errors.append(f"{email} appears more than once: {', '.join(labels)}.")
+
+    return ([] if errors else updates), errors, forms_by_member_id
+
+
+def apply_bulk_member_update(
+    db: Session,
+    update: BulkMemberUpdate,
+    *,
+    actor: Member,
+) -> bool:
+    member = update.member
+    currently_active = member.deactivated_at is None
+    changed = any(
+        [
+            member.display_name != update.display_name,
+            member.email != update.email,
+            email_for_kind(member, MemberEmailKind.PAYPAL) != (update.paypal_email or ""),
+            email_for_kind(member, MemberEmailKind.MAILING_LIST)
+            != (update.mailing_list_email or ""),
+            member.is_admin != update.is_admin,
+            member.good_standing != update.good_standing,
+            member.submission_review_required != update.submission_review_required,
+            currently_active != update.active,
+        ]
+    )
+    if not changed:
+        return False
+
+    member.display_name = update.display_name
+    member.email = update.email
+    member.is_admin = update.is_admin
+    member.good_standing = update.good_standing
+    member.submission_review_required = update.submission_review_required
+    sync_member_email_aliases(
+        db,
+        member,
+        primary_email=update.email,
+        paypal_email=update.paypal_email,
+        mailing_list_email=update.mailing_list_email,
+    )
+    if update.active:
+        member.deactivated_at = None
+    elif member.deactivated_at is None:
+        member.deactivated_at = datetime.now(UTC)
+
+    record_audit(
+        db,
+        actor=actor,
+        action="update",
+        entity_type="member",
+        entity_id=member.id,
+        summary=f"Bulk updated member {member.display_name}.",
+        metadata={
+            "email": member.email,
+            "is_admin": member.is_admin,
+            "good_standing": member.good_standing,
+            "submission_review_required": member.submission_review_required,
+            "active": member.deactivated_at is None,
+        },
+    )
+    return True
+
+
+def field_checked(form_data, name: str) -> bool:
+    return str(form_data.get(name) or "").lower() == "true"
+
+
 def render_form(
     request: Request,
     *,
@@ -577,6 +819,19 @@ class MemberImportRow:
 class MemberImportSource:
     content: bytes
     label: str
+
+
+@dataclass(frozen=True)
+class BulkMemberUpdate:
+    member: Member
+    display_name: str
+    email: str
+    paypal_email: str | None
+    mailing_list_email: str | None
+    is_admin: bool
+    good_standing: bool
+    submission_review_required: bool
+    active: bool
 
 
 def load_member_import_source(
@@ -883,6 +1138,43 @@ def member_form(member: Member) -> dict[str, str]:
         good_standing=member.good_standing,
         submission_review_required=member.submission_review_required,
     )
+
+
+def bulk_member_form(member: Member) -> dict[str, str]:
+    return bulk_member_form_from_values(
+        display_name=member.display_name,
+        email=member.email,
+        paypal_email=email_for_kind(member, MemberEmailKind.PAYPAL),
+        mailing_list_email=email_for_kind(member, MemberEmailKind.MAILING_LIST),
+        is_admin=member.is_admin,
+        good_standing=member.good_standing,
+        submission_review_required=member.submission_review_required,
+        active=member.deactivated_at is None,
+    )
+
+
+def bulk_member_form_from_values(
+    *,
+    display_name: str,
+    email: str,
+    paypal_email: str | None,
+    mailing_list_email: str | None,
+    is_admin: bool,
+    good_standing: bool,
+    submission_review_required: bool,
+    active: bool,
+) -> dict[str, str]:
+    form = member_submission_form(
+        display_name=display_name,
+        email=email,
+        paypal_email=paypal_email,
+        mailing_list_email=mailing_list_email,
+        is_admin=is_admin,
+        good_standing=good_standing,
+        submission_review_required=submission_review_required,
+    )
+    form["active"] = "true" if active else ""
+    return form
 
 
 def member_submission_form(

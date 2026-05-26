@@ -482,6 +482,57 @@ textarea {
   padding: 0 20px 20px;
 }
 
+.bulk-edit-panel {
+  overflow-x: auto;
+}
+
+.bulk-toolbar {
+  display: flex;
+  align-items: end;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 20px;
+  border-bottom: 1px solid var(--line);
+}
+
+.bulk-filter {
+  width: min(100%, 360px);
+}
+
+.bulk-toolbar .inline-actions {
+  flex-wrap: wrap;
+}
+
+.bulk-member-table input {
+  min-width: 170px;
+}
+
+.bulk-member-table .bulk-member-email {
+  min-width: 230px;
+}
+
+.bulk-email-grid {
+  display: grid;
+  gap: 8px;
+}
+
+.bulk-check {
+  text-align: center;
+  vertical-align: middle;
+}
+
+.bulk-check input {
+  width: auto;
+  min-width: 0;
+  min-height: auto;
+}
+
+.bulk-form-actions {
+  padding-top: 20px;
+  border-top: 1px solid var(--line);
+}
+
 .table-action {
   width: 1%;
   white-space: nowrap;

@@ -9,11 +9,16 @@
     <h1>Members</h1>
   </div>
   <div class="inline-actions">
+    <a class="button-secondary" href="/members/bulk-edit">Bulk Edit</a>
     <a class="button-secondary" href="/members.csv">Export CSV</a>
     <a class="button-secondary" href="/members/import">Import Roster</a>
     <a class="button" href="/members/new">Add Member</a>
   </div>
 </header>
+
+{% if summary %}
+<div class="notice">{{ summary }}</div>
+{% endif %}
 
 <section class="panel">
   {% if member_rows %}
