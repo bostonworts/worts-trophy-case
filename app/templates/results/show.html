@@ -10,8 +10,13 @@
     <p class="lede"><a href="/competitions/{{ result.competition.id }}">{{ result.competition.name }}</a> &middot; {{ result.style_subcategory.code }} {{ result.style_subcategory.name }}</p>
   </div>
   <div class="inline-actions">
-    {% if request.state.current_member and request.state.current_member.is_admin %}
+    {% set current_member = request.state.current_member %}
+    {% if current_member and current_member.is_admin %}
     <a class="button-secondary" href="/results/{{ result.id }}/edit">Edit</a>
+    {% elif current_member and current_member.id == result.member_id and not result.archived_at and not result.competition.archived_at %}
+    <a class="button-secondary" href="/me/results/{{ result.id }}/edit">Edit</a>
+    {% endif %}
+    {% if current_member and current_member.is_admin %}
       {% if result.archived_at %}
       <form method="post" action="/results/{{ result.id }}/restore">
         {% include "_csrf.html" %}

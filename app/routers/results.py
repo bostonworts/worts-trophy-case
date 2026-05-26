@@ -12,7 +12,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from sqlalchemy import or_, select
 from sqlalchemy.orm import Session, selectinload
 
-from app.auth import require_admin
+from app.auth import require_admin, require_member
 from app.db.models import (
     AuditLog,
     Competition,
@@ -421,16 +421,29 @@ def edit(
     _admin: Member = Depends(require_admin),
 ) -> HTMLResponse:
     result = get_result_or_404(db, result_id)
-    return render_form(
+    return render_result_edit_form(
         request,
         db,
-        form=result_form(result),
-        selected_member_id=result.member_id,
-        selected_competition_id=result.competition_id,
+        result,
         form_action=f"/results/{result.id}",
-        page_title="Edit Result",
-        page_heading="Edit result",
-        submit_label="Save Changes",
+    )
+
+
+@router.get("/me/results/{result_id}/edit", response_class=HTMLResponse)
+def edit_own_result(
+    result_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+    member: Member = Depends(require_member),
+) -> HTMLResponse:
+    ensure_member_can_edit_result(member)
+    result = get_member_editable_result_or_404(db, result_id, member)
+    return render_result_edit_form(
+        request,
+        db,
+        result,
+        form_action=f"/me/results/{result.id}",
+        member_locked=member,
     )
 
 
@@ -531,20 +544,11 @@ def update(
     admin: Member = Depends(require_admin),
 ) -> Response:
     result = get_result_or_404(db, result_id)
-    form = result_submission_form(
-        member_id=member_id,
-        competition_id=competition_id,
-        style_subcategory_id=style_subcategory_id,
-        bjcp_score=bjcp_score,
-        place=place,
-        placement_scope=placement_scope,
-        recipe_url=recipe_url,
-        notes=notes,
-    )
-    form["photo_url"] = result.photo_url or ""
-    form["recipe_file_url"] = result.recipe_file_url or ""
-    errors = validate_result(
+    return save_result_update(
+        request,
         db,
+        result,
+        actor=admin,
         member_id=member_id,
         competition_id=competition_id,
         style_subcategory_id=style_subcategory_id,
@@ -552,67 +556,59 @@ def update(
         place=place,
         placement_scope=placement_scope,
         recipe_url=recipe_url,
+        recipe_file=recipe_file,
+        photo=photo,
+        remove_recipe_file=remove_recipe_file,
+        remove_photo=remove_photo,
+        notes=notes,
+        form_action=f"/results/{result.id}",
         allow_inactive_member_id=result.member_id,
         allow_archived_competition_id=result.competition_id,
+        redirect_to="/results",
     )
-    if errors:
-        return render_form(
-            request,
-            db,
-            form=form,
-            errors=errors,
-            selected_member_id=member_id,
-            selected_competition_id=competition_id,
-            form_action=f"/results/{result.id}",
-            page_title="Edit Result",
-            page_heading="Edit result",
-            submit_label="Save Changes",
-            status_code=400,
-        )
 
-    assert member_id is not None
-    assert competition_id is not None
-    assert style_subcategory_id is not None
-    result.member_id = member_id
-    result.competition_id = competition_id
-    result.style_subcategory_id = style_subcategory_id
-    result.bjcp_score = bjcp_score
-    result.place = place
-    result.placement_scope = placement_scope
-    result.recipe_url = blank_to_none(recipe_url)
-    result.notes = blank_to_none(notes)
-    attachment_errors = update_result_attachments(
+
+@router.post("/me/results/{result_id}")
+def update_own_result(
+    result_id: int,
+    request: Request,
+    competition_id: int | None = Form(None),
+    style_subcategory_id: int | None = Form(None),
+    bjcp_score: Decimal | None = Form(None),
+    place: int | None = Form(None),
+    placement_scope: PlacementScope | None = Form(None),
+    recipe_url: str | None = Form(None),
+    recipe_file: UploadFile | None = File(None),
+    photo: UploadFile | None = File(None),
+    remove_recipe_file: bool = Form(False),
+    remove_photo: bool = Form(False),
+    notes: str | None = Form(None),
+    db: Session = Depends(get_db),
+    member: Member = Depends(require_member),
+) -> Response:
+    ensure_member_can_edit_result(member)
+    result = get_member_editable_result_or_404(db, result_id, member)
+    return save_result_update(
+        request,
+        db,
         result,
-        photo=photo,
+        actor=member,
+        member_id=member.id,
+        competition_id=competition_id,
+        style_subcategory_id=style_subcategory_id,
+        bjcp_score=bjcp_score,
+        place=place,
+        placement_scope=placement_scope,
+        recipe_url=recipe_url,
         recipe_file=recipe_file,
+        photo=photo,
         remove_photo=remove_photo,
         remove_recipe_file=remove_recipe_file,
+        notes=notes,
+        form_action=f"/me/results/{result.id}",
+        member_locked=member,
+        redirect_to=f"/results/{result.id}",
     )
-    if attachment_errors:
-        return render_form(
-            request,
-            db,
-            form=form,
-            errors=attachment_errors,
-            selected_member_id=member_id,
-            selected_competition_id=competition_id,
-            form_action=f"/results/{result.id}",
-            page_title="Edit Result",
-            page_heading="Edit result",
-            submit_label="Save Changes",
-            status_code=400,
-        )
-    record_audit(
-        db,
-        actor=admin,
-        action="update",
-        entity_type="result",
-        entity_id=result.id,
-        summary="Updated result.",
-        metadata=result_audit_metadata(result),
-    )
-    db.commit()
-    return RedirectResponse("/results", status_code=303)
 
 
 @router.post("/results/{result_id}/archive")
@@ -655,6 +651,170 @@ def restore(
     )
     db.commit()
     return RedirectResponse("/results", status_code=303)
+
+
+def ensure_member_can_edit_result(member: Member) -> None:
+    if member.deactivated_at is not None or not member.good_standing:
+        raise HTTPException(
+            status_code=403,
+            detail="Only active members in good standing can edit their results.",
+        )
+
+
+def get_member_editable_result_or_404(
+    db: Session,
+    result_id: int,
+    member: Member,
+) -> Result:
+    result = get_result_or_404(db, result_id)
+    if (
+        result.member_id != member.id
+        or result.archived_at is not None
+        or result.competition.archived_at is not None
+    ):
+        raise HTTPException(status_code=404, detail="Result not found")
+    return result
+
+
+def render_result_edit_form(
+    request: Request,
+    db: Session,
+    result: Result,
+    *,
+    form_action: str,
+    form: dict[str, str] | None = None,
+    errors: list[str] | None = None,
+    selected_member_id: int | None = None,
+    selected_competition_id: int | None = None,
+    member_locked: Member | None = None,
+    status_code: int = 200,
+) -> HTMLResponse:
+    return render_form(
+        request,
+        db,
+        form=form if form is not None else result_form(result),
+        errors=errors,
+        selected_member_id=(
+            selected_member_id if selected_member_id is not None else result.member_id
+        ),
+        selected_competition_id=(
+            selected_competition_id
+            if selected_competition_id is not None
+            else result.competition_id
+        ),
+        form_action=form_action,
+        page_title="Edit Result",
+        page_heading="Edit result",
+        submit_label="Save Changes",
+        member_locked=member_locked,
+        status_code=status_code,
+    )
+
+
+def save_result_update(
+    request: Request,
+    db: Session,
+    result: Result,
+    *,
+    actor: Member,
+    member_id: int | None,
+    competition_id: int | None,
+    style_subcategory_id: int | None,
+    bjcp_score: Decimal | None,
+    place: int | None,
+    placement_scope: PlacementScope | None,
+    recipe_url: str | None,
+    recipe_file: UploadFile | None,
+    photo: UploadFile | None,
+    remove_recipe_file: bool,
+    remove_photo: bool,
+    notes: str | None,
+    form_action: str,
+    member_locked: Member | None = None,
+    allow_inactive_member_id: int | None = None,
+    allow_archived_competition_id: int | None = None,
+    redirect_to: str = "/results",
+) -> Response:
+    form = result_submission_form(
+        member_id=member_id,
+        competition_id=competition_id,
+        style_subcategory_id=style_subcategory_id,
+        bjcp_score=bjcp_score,
+        place=place,
+        placement_scope=placement_scope,
+        recipe_url=recipe_url,
+        notes=notes,
+    )
+    form["photo_url"] = result.photo_url or ""
+    form["recipe_file_url"] = result.recipe_file_url or ""
+    errors = validate_result(
+        db,
+        member_id=member_id,
+        competition_id=competition_id,
+        style_subcategory_id=style_subcategory_id,
+        bjcp_score=bjcp_score,
+        place=place,
+        placement_scope=placement_scope,
+        recipe_url=recipe_url,
+        allow_inactive_member_id=allow_inactive_member_id,
+        allow_archived_competition_id=allow_archived_competition_id,
+    )
+    if errors:
+        return render_result_edit_form(
+            request,
+            db,
+            result,
+            form=form,
+            errors=errors,
+            selected_member_id=member_id,
+            selected_competition_id=competition_id,
+            form_action=form_action,
+            member_locked=member_locked,
+            status_code=400,
+        )
+
+    assert member_id is not None
+    assert competition_id is not None
+    assert style_subcategory_id is not None
+    result.member_id = member_id
+    result.competition_id = competition_id
+    result.style_subcategory_id = style_subcategory_id
+    result.bjcp_score = bjcp_score
+    result.place = place
+    result.placement_scope = placement_scope
+    result.recipe_url = blank_to_none(recipe_url)
+    result.notes = blank_to_none(notes)
+    attachment_errors = update_result_attachments(
+        result,
+        photo=photo,
+        recipe_file=recipe_file,
+        remove_photo=remove_photo,
+        remove_recipe_file=remove_recipe_file,
+    )
+    if attachment_errors:
+        return render_result_edit_form(
+            request,
+            db,
+            result,
+            form=form,
+            errors=attachment_errors,
+            selected_member_id=member_id,
+            selected_competition_id=competition_id,
+            form_action=form_action,
+            member_locked=member_locked,
+            status_code=400,
+        )
+    record_audit(
+        db,
+        actor=actor,
+        action="update",
+        entity_type="result",
+        entity_id=result.id,
+        summary="Updated result.",
+        metadata=result_audit_metadata(result),
+    )
+    db.commit()
+    return RedirectResponse(redirect_to, status_code=303)
 
 
 def render_form(
