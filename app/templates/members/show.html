@@ -74,7 +74,7 @@
         </td>
         <td>
           <a class="result-link table-primary" href="/competitions/{{ result.competition.id }}">{{ result.competition.name }}</a>
-          <span class="table-secondary">{{ result.competition.competition_type.value.replace("_", " ") }}</span>
+          <span class="table-secondary">{{ result.competition.competition_type|humanize }}</span>
         </td>
         <td>
           <a class="style-chip" href="/results/{{ result.id }}">{{ result.style_subcategory.code }} {{ result.style_subcategory.name }}</a>
@@ -84,7 +84,7 @@
         <td>
           {% if result.place %}
           <span class="place-badge place-{{ result.place }}">{{ result.place|place_label }}</span>
-          <span class="scope-text">{{ result.placement_scope.value.replace("_", " ") }}</span>
+          <span class="scope-text">{{ result.placement_scope|humanize }}</span>
           {% else %}
           <span class="place-badge place-empty">Unplaced</span>
           {% endif %}
@@ -132,7 +132,7 @@
         <td>
           {% if result.place %}
           <span class="place-badge place-{{ result.place }}">{{ result.place|place_label }}</span>
-          <span class="scope-text">{{ result.placement_scope.value.replace("_", " ") }}</span>
+          <span class="scope-text">{{ result.placement_scope|humanize }}</span>
           {% else %}
           <span class="place-badge place-empty">Unplaced</span>
           {% endif %}

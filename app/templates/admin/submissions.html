@@ -67,7 +67,7 @@
         <td>
           {% if submission.place %}
           <span class="table-primary">{{ submission.place|place_label }}</span>
-          <span class="table-secondary">{{ submission.placement_scope.value.replace("_", " ") }}</span>
+          <span class="table-secondary">{{ submission.placement_scope|humanize }}</span>
           {% else %}
           <span class="muted">Unplaced</span>
           {% endif %}

@@ -11,6 +11,7 @@ from app.domain.scoring import (
     DEFAULT_COMPETITION_TYPE_WEIGHTS,
     LeaderboardSettings,
 )
+from app.services.display import humanize_label
 
 
 SETTING_PREFIX = "leaderboard."
@@ -148,7 +149,7 @@ def validate_leaderboard_settings_form(
         value = parse_form_decimal(
             form,
             f"weight_{competition_type.value}",
-            f"{competition_type.value.replace('_', ' ')} weight",
+            f"{humanize_label(competition_type)} weight",
             errors,
         )
         competition_type_weights[competition_type.value] = value or Decimal("0")

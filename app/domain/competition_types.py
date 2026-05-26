@@ -1,4 +1,5 @@
 from app.db.models import CompetitionType
+from app.services.display import humanize_label
 
 
 HIGH_PROFILE_TYPES = {
@@ -24,11 +25,4 @@ def is_high_profile(competition_type: CompetitionType | str) -> bool:
 
 
 def describe_competition_type(competition_type: CompetitionType | str) -> str:
-    words = competition_type_value(competition_type).replace("_", " ").split()
-    if not words:
-        return ""
-    first, *rest = words
-    if rest:
-        return " ".join([first.upper(), *rest]).title().replace("Mcab", "MCAB").replace("Nhc", "NHC")
-    return first.title()
-
+    return humanize_label(competition_type_value(competition_type))

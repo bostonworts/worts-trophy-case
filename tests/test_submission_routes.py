@@ -258,7 +258,7 @@ def test_member_can_submit_result_and_admin_can_approve(admin_client) -> None:
 
         result_response = admin_client.get(approve_response.headers["location"])
         assert result_response.status_code == 200
-        assert "HM in category" in result_response.text
+        assert "HM in Category" in result_response.text
     finally:
         cleanup_submission_data()
 

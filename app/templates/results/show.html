@@ -54,7 +54,7 @@
         </div>
         <div>
           <dt>Type</dt>
-          <dd>{{ result.competition.competition_type.value.replace("_", " ") }}</dd>
+          <dd>{{ result.competition.competition_type|humanize }}</dd>
         </div>
       </dl>
     </div>
@@ -88,7 +88,7 @@
           <dt>Place</dt>
           <dd>
             {% if result.place %}
-            {{ result.place|place_label }} in {{ result.placement_scope.value.replace("_", " ") }}
+            {{ result.place|place_label }} in {{ result.placement_scope|humanize }}
             {% else %}
             Not placed
             {% endif %}

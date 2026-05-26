@@ -178,7 +178,7 @@
         </td>
         <td>
           <a class="result-link table-primary" href="/competitions/{{ result.competition.id }}">{{ result.competition.name }}</a>
-          <span class="table-secondary">{{ result.competition.competition_type.value.replace("_", " ") }}</span>
+          <span class="table-secondary">{{ result.competition.competition_type|humanize }}</span>
         </td>
         <td>
           <a class="result-link table-primary" href="/results/{{ result.id }}">{{ result.style_subcategory.code }} {{ result.style_subcategory.name }}</a>
@@ -188,7 +188,7 @@
         <td>
           {% if result.place %}
           <span class="table-primary">{{ result.place|place_label }}</span>
-          <span class="table-secondary">{{ result.placement_scope.value.replace("_", " ") }}</span>
+          <span class="table-secondary">{{ result.placement_scope|humanize }}</span>
           {% else %}
           <span class="muted">Unplaced</span>
           {% endif %}
@@ -261,7 +261,7 @@
         <td>
           {% if result.place %}
           <span class="table-primary">{{ result.place|place_label }}</span>
-          <span class="table-secondary">{{ result.placement_scope.value.replace("_", " ") }}</span>
+          <span class="table-secondary">{{ result.placement_scope|humanize }}</span>
           {% else %}
           <span class="muted">Unplaced</span>
           {% endif %}

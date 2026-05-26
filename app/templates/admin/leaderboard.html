@@ -72,7 +72,7 @@
       <div class="settings-grid">
         {% for competition_type in competition_types %}
         <div class="field">
-          <label for="weight_{{ competition_type.value }}">{{ competition_type.value.replace("_", " ").title() }}</label>
+          <label for="weight_{{ competition_type.value }}">{{ competition_type|humanize }}</label>
           <input id="weight_{{ competition_type.value }}" name="weight_{{ competition_type.value }}" type="number" min="0" step="0.1" value="{{ settings.get('weight_' ~ competition_type.value, '1') }}" required>
         </div>
         {% endfor %}

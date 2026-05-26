@@ -32,7 +32,7 @@
       <label for="competition_type">Type</label>
       <select id="competition_type" name="competition_type" required>
         {% for type in competition_types %}
-        <option value="{{ type.value }}" {% if form.get('competition_type') == type.value %}selected{% endif %}>{{ type.value.replace("_", " ").title() }}</option>
+        <option value="{{ type.value }}" {% if form.get('competition_type') == type.value %}selected{% endif %}>{{ type|humanize }}</option>
         {% endfor %}
       </select>
     </div>

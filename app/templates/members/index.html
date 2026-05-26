@@ -39,7 +39,7 @@
           <div class="table-secondary">
             {% for email in row.member.emails %}
               {% if email.kind.value != "primary" %}
-              <div>{{ email.kind.value.replace("_", " ") }}: {{ email.email }}</div>
+              <div>{{ email.kind|humanize }}: {{ email.email }}</div>
               {% endif %}
             {% endfor %}
           </div>

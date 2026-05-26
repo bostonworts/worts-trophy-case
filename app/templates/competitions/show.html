@@ -7,7 +7,7 @@
   <div>
     <p class="kicker">{{ competition.date.isoformat() }}</p>
     <h1>{{ competition.name }}</h1>
-    <p class="lede">{{ competition.competition_type.value.replace("_", " ") }}</p>
+    <p class="lede">{{ competition.competition_type|humanize }}</p>
   </div>
   <div class="inline-actions">
     <a class="button-secondary" href="/results?competition_id={{ competition.id }}">Archive</a>
@@ -84,7 +84,7 @@
         <td>
           {% if result.place %}
           <span class="place-badge place-{{ result.place }}">{{ result.place|place_label }}</span>
-          <span class="scope-text">{{ result.placement_scope.value.replace("_", " ") }}</span>
+          <span class="scope-text">{{ result.placement_scope|humanize }}</span>
           {% else %}
           <span class="place-badge place-empty">Unplaced</span>
           {% endif %}
@@ -125,7 +125,7 @@
         <td>
           {% if result.place %}
           <span class="place-badge place-{{ result.place }}">{{ result.place|place_label }}</span>
-          <span class="scope-text">{{ result.placement_scope.value.replace("_", " ") }}</span>
+          <span class="scope-text">{{ result.placement_scope|humanize }}</span>
           {% else %}
           <span class="place-badge place-empty">Unplaced</span>
           {% endif %}

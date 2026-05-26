@@ -95,7 +95,7 @@
       <select id="placement_scope" name="placement_scope" data-placement-scope>
         <option value="" {% if not form.get('placement_scope') %}selected{% endif %}>None</option>
         {% for scope in placement_scopes %}
-        <option value="{{ scope.value }}" {% if form.get('placement_scope') == scope.value %}selected{% endif %}>{{ scope.value.replace("_", " ").title() }}</option>
+        <option value="{{ scope.value }}" {% if form.get('placement_scope') == scope.value %}selected{% endif %}>{{ scope|humanize }}</option>
         {% endfor %}
       </select>
     </div>

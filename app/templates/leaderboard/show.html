@@ -90,7 +90,7 @@
         <td><span class="table-primary">{{ row.competition }}</span></td>
         <td>
           <span class="place-badge place-{{ row.place }}">{{ row.place|place_label }}</span>
-          <span class="scope-text">{{ row.scope.replace("_", " ") }}</span>
+          <span class="scope-text">{{ row.scope|humanize }}</span>
         </td>
         <td>
           {{ row.breakdown.base_points }} x {{ row.breakdown.placement_multiplier }}

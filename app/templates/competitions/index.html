@@ -38,7 +38,7 @@
       <tr>
         <td>{{ competition.date.isoformat() }}</td>
         <td><a class="result-link" href="/competitions/{{ competition.id }}">{{ competition.name }}</a></td>
-        <td>{{ competition.competition_type.value.replace("_", " ").title() }}</td>
+        <td>{{ competition.competition_type|humanize }}</td>
         <td>
           {% if competition.url %}
           <a href="{{ competition.url }}">{{ competition.url }}</a>
@@ -86,7 +86,7 @@
       <tr>
         <td>{{ competition.date.isoformat() }}</td>
         <td><a class="result-link" href="/competitions/{{ competition.id }}">{{ competition.name }}</a></td>
-        <td>{{ competition.competition_type.value.replace("_", " ").title() }}</td>
+        <td>{{ competition.competition_type|humanize }}</td>
         <td>{{ competition.archived_at.date().isoformat() }}</td>
         <td class="table-action">
           <div class="inline-actions">
