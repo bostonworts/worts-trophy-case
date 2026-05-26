@@ -494,7 +494,7 @@ textarea {
 }
 
 .bulk-edit-panel {
-  overflow-x: auto;
+  overflow: hidden;
 }
 
 .bulk-toolbar {
@@ -513,6 +513,22 @@ textarea {
 
 .bulk-toolbar .inline-actions {
   flex-wrap: wrap;
+}
+
+.bulk-table-scroll {
+  max-height: min(72vh, 760px);
+  overflow: auto;
+}
+
+.bulk-member-table {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.bulk-member-table th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
 }
 
 .bulk-member-table input {
